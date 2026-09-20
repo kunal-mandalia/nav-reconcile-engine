@@ -17,6 +17,8 @@ Search, filters, detail tabs, source previews, simulated reruns and filtered CSV
 
 The agreed demo architecture is **React → Node.js/Express client API → Python/FastAPI reconciliation service → DuckDB and local files**. The HTML proposal remains a standalone visual reference, not a running implementation of this stack.
 
+The compact first implementation uses four API operations: list funds, start a run, read its decision/evidence and open an original source document. Sample packs and rules are seeded locally. Upload/revision controls, review actions, export and dedicated history browsing shown or discussed in this proposal are later extensions, not first-demo requirements. See the [compact API contract](../plans/api-contracts.md).
+
 Express will centralise user authentication, fund-level authorisation, rate limiting, request validation and request IDs. FastAPI will remain internal, authenticate the calling service and own document processing, reconciliation and persistence. React will access results and source evidence through Express, including while polling a running reconciliation.
 
 The first demo will use clearly labelled mock identity and basic rate limiting. The React implementation should show access-denied, retry-after and service-unavailable feedback; these states are not yet simulated in the HTML proposal. Production identity integration and distributed rate limits are interview discussion topics. See the [implementation plan](../plans/provisional.md) for scope and verification steps.
