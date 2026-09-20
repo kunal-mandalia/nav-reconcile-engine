@@ -13,6 +13,14 @@ Open [nav-reconciliation-ux.html](nav-reconciliation-ux.html) directly in a brow
 
 Search, filters, detail tabs, source previews, simulated reruns and filtered CSV export work. Data is fictional and resets on refresh. Upload and review buttons explain proposed workflows; they do not upload documents or approve results. “Ledger” is a provisional product label.
 
+## Planned application integration
+
+The agreed demo architecture is **React → Node.js/Express client API → Python/FastAPI reconciliation service → DuckDB and local files**. The HTML proposal remains a standalone visual reference, not a running implementation of this stack.
+
+Express will centralise user authentication, fund-level authorisation, rate limiting, request validation and request IDs. FastAPI will remain internal, authenticate the calling service and own document processing, reconciliation and persistence. React will access results and source evidence through Express, including while polling a running reconciliation.
+
+The first demo will use clearly labelled mock identity and basic rate limiting. The React implementation should show access-denied, retry-after and service-unavailable feedback; these states are not yet simulated in the HTML proposal. Production identity integration and distributed rate limits are interview discussion topics. See the [implementation plan](../plans/provisional.md) for scope and verification steps.
+
 ## User needs beyond the initial brief
 
 - **Reporting context:** Period, entity scope, base currency, units, pack version and agreed tolerance must be visible alongside each decision.
