@@ -2,7 +2,7 @@
 
 This plan is structured for a coding agent to implement a simplified end-to-end prototype for Wednesday's demo.
 
-Agreed stack: **React → Node.js/Express client API → Python/FastAPI reconciliation service → local DuckDB and filesystem**. The repository currently contains a standalone HTML UX proposal; these application components remain to be built. See [architectural considerations](architectural-considerations.md) for the trust boundary and demo scope.
+Agreed stack: **React → Node.js/Express client API → Python/FastAPI reconciliation service → Postgres and filesystem**. The current runnable slice is React and Express in TypeScript, backed by an in-memory mock fund service. Python/FastAPI and Postgres remain planned. See the [run instructions](../../README.md). See [architectural considerations](architectural-considerations.md) for the trust boundary and demo scope.
 
 Detailed draft: [state, data and logical schemas](state-and-data.md), plus [API contracts](api-contracts.md). These sketches propose a fund-level first slice, immutable packs/runs and separate execution, outcome and review states.
 
@@ -10,10 +10,16 @@ Detailed draft: [state, data and logical schemas](state-and-data.md), plus [API 
 
 ---
 
+## Current slice: mock API and connected UX
+
+Implemented in TypeScript: four Express routes, shared runtime contracts, fixed demo identities, fund permissions, separate read/run rate budgets, request IDs, in-memory idempotency, simulated stages, immutable decisions, generated CSV source fixtures and React screens. Six funds cover match, mismatch, missing income, not yet run and processing failure. Monetary calculations use `decimal.js` with 50-digit precision; the API carries six-place decimal strings and the demo tolerance is `0.010000`.
+
+This slice does not parse uploaded files or persist across restarts. The phases below describe the target implementation, including Python, Postgres and real parsing.
+
 ## Phase 1: Project Setup & Core Infrastructure
-* **Repository Structure:** Create a React frontend in `/apps/web`, a Node.js/Express client API in `/apps/client-api`, and a Python service in `/services/reconciliation` with ingestion, indexing, extraction and reconciliation modules.
-* **Dependencies:** Use a Node package manager for React and Express. Initialize Poetry or `uv` for Python with `fastapi`, an ASGI server, `duckdb`, `polars`, `openpyxl`, `python-calamine` and `pymupdf` (fitz).
-* **State Management:** Set up local DuckDB and file-system directories for raw uploads (`/data/bronze`) and structured outputs (`/data/silver`). Python owns persistence; the client API accesses data through the service.
+* **Repository Structure:** Use `/web-app` for React, `/web-server` for Express, `/packages/contracts` for shared TypeScript/Zod schemas, and `/fund-service` for the planned Python service with ingestion, indexing, extraction and reconciliation modules.
+* **Dependencies:** Use a Node package manager for React and Express. Initialize Poetry or `uv` for Python with `fastapi`, an ASGI server, `psycopg`, `polars`, `openpyxl`, `python-calamine` and `pymupdf` (fitz).
+* **State Management:** Set up Postgres in Docker Compose and file-system directories for raw uploads (`/data/bronze`) and structured outputs (`/data/silver`). Python owns persistence; the client API accesses data through the service.
 * **Local Runtime:** Expose Express as the client-facing API. Keep FastAPI on loopback or an internal container network, with a configured service credential available only to server processes. Route all React API calls through Express.
 
 ---
@@ -32,7 +38,7 @@ Detailed draft: [state, data and logical schemas](state-and-data.md), plus [API 
 ## Phase 2: Ingestion Gateway & Unified Indexer (Step 1)
 * **Local Pack Import:** Use a local seed/import utility to register sample quarterly ZIP packs, extract contents safely, and log document hashes, paths and MIME types. Select packs/rules before the demo starts. Extraction and reconciliation still operate on actual sample files. A public upload route is deferred.
 * **MIME Routing & Fast Paths:**
-  * **CSVs:** Run a quick delimiter check; if contiguous, route to direct DuckDB streaming.
+  * **CSVs:** Parse the supported layout with Python CSV tooling and preserve record/column locators. Unknown layouts return needs input; broader format inference is outside demo scope.
   * **Excel (`.xlsx`):** Implement a structural pre-pass using `calamine` or `openpyxl(read_only=True)` to read populated sheet dimensions and skip empty cells in $O(K)$ time.
   * **PDFs:** Register page counts and extract text blocks/bounding boxes using `pymupdf`.
 * **Output:** Generate an index manifest mapping files to sheets, tables, and spatial coordinate ranges.
@@ -42,11 +48,11 @@ Detailed draft: [state, data and logical schemas](state-and-data.md), plus [API 
 ## Phase 3: Extraction & Normalization Layer
 * **Tabular Ranged Reads:** Implement format-specific extraction workers:
   * Pull specific ranges (e.g., `A52:H110`) from Excel sheets directly into temporary DataFrames.
-  * Stream clean CSVs via zero-copy DuckDB/Arrow memory.
+  * Read supported CSV records with Python parsers; retain raw text before Decimal conversion.
 * **Accounting Normalization:** Write helper functions to clean financial strings:
-  * Parse accounting brackets `(1,250.00)` with Python `Decimal`, preserving raw text and source location. Store normalised money in DuckDB `DECIMAL(38, 6)` and return decimal strings through the API.
+  * Parse accounting brackets `(1,250.00)` with Python `Decimal`, preserving raw text and source location. Store normalised money in Postgres `NUMERIC(38,6)` and return decimal strings through the API.
   * Parse currency and scale notes (e.g., "in thousands") with evidence for their interpretation. Use positive call/distribution magnitudes and signed net income; record sign transformations to avoid deducting a bracketed distribution twice.
-* **Schema Persistence:** Store extracted tables in local DuckDB with lineage metadata back to the source file. PostgreSQL JSONB remains a later alternative rather than a second demo datastore.
+* **Schema Persistence:** Store canonical facts and decisions in Postgres with lineage back to immutable source files. Use JSONB for versioned manifests and extraction metadata. DuckDB is excluded from the initial stack.
 
 ---
 
@@ -54,7 +60,7 @@ Detailed draft: [state, data and logical schemas](state-and-data.md), plus [API 
 * **Accounting Invariant Verifier:** Implement automated check routines for NAV schedules:
   * Formula: $\text{Beginning Capital} + \text{Capital Calls} - \text{Distributions} + \text{Signed Net Income} = \text{Ending Capital}$
 * **HITL Exception Gating:** Persist check results, source facts and commentary with the completed decision. A review queue projects mismatches or insufficient evidence from these records; technical failures remain separate. Do not publish uncertain inputs as verified data, or treat a parser confidence score as proof of accounting accuracy.
-* **Jev Integration Mock:** Create a lightweight stub/wrapper for Jev or deterministic rules to handle routing decisions and confidence score evaluation.
+* **Deterministic scope:** Use fixed layout mappings, explicit validation and deterministic commentary. AI-assisted parsing and Jev integration are later extensions, outside this demo.
 * **Run Lifecycle:** Freeze pack version, reporting period, rule version, tolerance and request/actor context for each run. Use persistent idempotency keys and controlled background work in Python. Preserve prior results on rerun and return status, commentary and provenance through Express. On restart mark interrupted demo runs failed; durable scheduling and automatic recovery are outside the initial demo.
 
 ---

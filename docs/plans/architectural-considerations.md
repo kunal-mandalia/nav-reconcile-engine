@@ -1,8 +1,8 @@
 # Architecture & Key Decision Points: Institutional Fund Pack NAV Reconciliation Engine
 
-This document outlines the planned architecture for automated private market fund pack ingestion and NAV reconciliation. The current repository contains plans and a standalone HTML/CSS/JavaScript UX prototype; the application services described here are not implemented yet.
+This document outlines the planned architecture for automated private market fund pack ingestion and NAV reconciliation. The repository now includes a runnable TypeScript React frontend and Express API with an in-memory mocked fund service, alongside the original HTML UX proposal. Python/FastAPI, real document extraction and Postgres persistence remain planned.
 
-The agreed interview demo stack is **React frontend → Node.js/Express client API → Python/FastAPI reconciliation service → local DuckDB and filesystem storage**.
+The agreed interview demo stack is **React frontend → Node.js/Express client API → Python/FastAPI reconciliation service → Postgres and filesystem storage**.
 
 The proposed [state and data design](state-and-data.md) and [API contracts](api-contracts.md) define the next level of detail: immutable run inputs, independent execution/outcome/review states, decimal money, schemas and request semantics.
 
@@ -11,7 +11,7 @@ The compact first demo uses four public operations: list funds, start a run, rea
 ---
 
 ## 1. The Core Problem
-Private market fund administrators (e.g., Citco, SS&C) deliver heterogeneous multi-file reporting packages containing Schedule of Investments, Trial Balances, and Partner Capital Statements. These arrive in mixed MIME types (PDF, Excel, CSV, scanned images) with unpredictable layouts, multi-thousand-row spreadsheets, and floating summary blocks. 
+Private market fund administrators (e.g., Citco, SS&C) deliver heterogeneous multi-file reporting packages containing Schedule of Investments, Trial Balances, and Partner Capital Statements. These arrive in mixed MIME types (PDF, Excel, CSV, scanned images) with unpredictable layouts, multi-thousand-row spreadsheets, and floating summary blocks.
 
 The goal of this pipeline is to ingest these quarterly/monthly packages, perform reliable extraction, verify balance-sheet math invariants, and persist verified data for downstream analytical Q&A.
 
@@ -21,7 +21,7 @@ The goal of this pipeline is to ingest these quarterly/monthly packages, perform
 
 ### A. Late-Binding Ranged Reads vs. Upfront Schema Locking (ELT over ETL)
 * **The Trade-off:** Eagerly cleaning and transforming messy financial packs into rigid SQL schemas upfront risks breaking or dropping data when administrators alter their layouts or add non-standard footnotes.
-* **The Decision:** We utilize **Late-Binding Ranged Reads supported by Semi-Structured Persistence (Postgres JSONB / DuckDB)**. 
+* **The Decision:** We utilize **Late-Binding Ranged Reads supported by Semi-Structured Persistence (Postgres JSONB)**.
 * **Why:** Retains original documents and extraction coordinates for later inspection. A small typed schema captures only selected accounting facts and decisions; heterogeneous source tables remain indexed and semi-structured.
 
 ### B. Ingestion Cadence & Processing Budget (Batch vs. Real-Time)
@@ -29,16 +29,15 @@ The goal of this pipeline is to ingest these quarterly/monthly packages, perform
 * **The Decision:** Designed for a **monthly/quarterly batch processing window**.
 * **Why:** Because reports arrive periodically, we can afford a 30–90 second deep extraction, layout profiling, and validation check upfront. This cadence also makes **Human-in-the-Loop (HITL) review queues** viable for edge cases and schema drift before data lands in the gold layer.
 
-### C. Deterministic Core vs. Agentic Escalation (The 90/10 Rule)
+### C. Deterministic Demo and Later AI Assistance
 * **The Trade-off:** Relying entirely on generative LLMs/VLMs for tabular parsing is slow, expensive, and prone to hallucinations on numbers.
-* **The Decision:** 
-  * **90% Deterministic Core:** Plans Python/Rust tooling (DuckDB, `calamine`, PyMuPDF) for CSV and spreadsheet extraction, with Python `Decimal` and DuckDB `DECIMAL(38, 6)` for reconciliation amounts. Binary floating point is not exact monetary arithmetic; JSON amounts are decimal strings. The split is a design target, not a measured result.
-  * **10% Agentic & VLM Escalation:** Reserved exclusively for ambiguous layouts, unmerging messy cells, and parsing unstructured footnotes.
+* **The Decision:**
+  * **Demo:** Known-layout Python parsers (`csv`, `calamine`, PyMuPDF) with Python `Decimal` and Postgres `NUMERIC(38,6)` for amounts. Reject unsupported inputs as insufficient evidence. JSON amounts remain decimal strings.
+  * **Later:** AI-assisted layout interpretation can propose candidates with provenance; deterministic checks still decide the financial outcome. No measured deterministic/AI split is claimed.
 
-### D. System One Control Layer (Jev Integration)
-* **The Trade-off:** Heavy LLM prompt loops introduce high latency and token costs for basic routing tasks.
-* **The Decision:** Uses **Jev** as a high-speed, deterministic control layer for pipeline routing, sheet classification, and calibrated confidence gating.
-* **Why:** Provides typed, probabilistic outputs (`Choice`, `Score`) in milliseconds with zero prose overhead, routing files cleanly between the direct CSV path, sparse Excel profiler, and VLM visual pipelines.
+### D. Control Layer
+* **Demo decision:** Explicit deterministic mapping and validation rules, with commentary templates linked to facts/checks. No Jev or LLM dependency in the first slice.
+* **Later exploration:** Evaluate Jev or another routing layer for ambiguous input layouts after the deterministic baseline is proven.
 
 ### E. Client API Boundary (Node.js/Express)
 
@@ -50,14 +49,16 @@ The goal of this pipeline is to ingest these quarterly/monthly packages, perform
 | --- | --- |
 | React frontend | Fund list, status, upload/rerun actions, progress, commentary, source evidence and run history. Calls only the Express client API. |
 | Node.js/Express client API | Authenticate the caller; authorise access to the requested fund, pack, run or source; limit requests; validate public request shapes; apply upload limits; propagate request IDs; forward authorised calls to Python. |
-| Python/FastAPI service | Authenticate the calling service, validate internal inputs, register runs, process documents, enforce reconciliation rules and return results with source references. Own DuckDB and file access. |
-| Local DuckDB and filesystem | Persist funds, pack versions, run state, results, exceptions and provenance; preserve uploaded source files and extracted outputs. Accessible through Python rather than directly from the browser or Node. |
+| Python/FastAPI service | Authenticate the calling service, validate internal inputs, register runs, process documents, enforce reconciliation rules and return results with source references. Own Postgres and file access. |
+| Postgres and filesystem | Persist funds, pack versions, run state, results, exceptions and provenance; preserve uploaded source files and extracted outputs. Accessible through Python rather than directly from the browser or Node. |
 
 **Network and trust boundary:** Express is the only externally reachable application API. FastAPI is reachable only by the client API over a private network or loopback in the local demo, and requires a server-side service credential. Database and file storage remain internal. The frontend must never receive that credential. Express derives user and fund context from authenticated identity and trusted resource metadata, rather than trusting caller-supplied identity or ownership headers. Python checks the trusted service context and domain rules; private networking alone does not authenticate a request.
 
 **Demo implementation:** Use an explicitly enabled mock identity with fixed fund permissions, basic single-instance rate limiting, request validation and request IDs. Demonstrate `401` for missing/invalid demo identity, `403` for a forbidden fund action, and `429` with retry guidance for throttling. Express supplies trusted allowed-fund/action scope to Python, which checks resource membership before returning data; no dedicated ownership-lookup endpoint is needed. Mock identity is a local demonstration fixture, not production authentication. Use a configured service credential between Express and FastAPI. Production identity-provider integration, distributed rate-limit storage, credential rotation and stronger service identity are discussion topics, not demo prerequisites.
 
-**Long-running work:** An authorised start request goes through Express to FastAPI, which records a run and returns its ID with `202 Accepted`. Python performs the reconciliation in background work; React polls status and results through Express. Authorisation also applies to polling, history, exports and source retrieval. Rate limits should distinguish costly upload/rerun requests from routine status polling. The demo can use one Python process with controlled concurrency; a durable queue and recovery after process restarts remain future work.
+**Current mock boundary:** `web-server/src/service.ts` implements the four-operation `FundService` adapter in memory. React calls real Express HTTP routes; the adapter simulates extraction stages and generates decisions/source bytes from fixed fixtures. It does not call Python or a database. Browser tests exercise this path. The fixed demo tokens are public fixtures, and the executable refuses `NODE_ENV=production`.
+
+**Long-running work (planned):** An authorised start request goes through Express to FastAPI, which records a run and returns its ID with `202 Accepted`. Python performs the reconciliation in background work; React polls status and results through Express. Authorisation also applies to polling, history, exports and source retrieval. Rate limits should distinguish costly upload/rerun requests from routine status polling. The demo can use one Python process with controlled concurrency; a durable queue and recovery after process restarts remain future work.
 
 **Architecture reference:** The shared `system-architecture` diagram shows the agreed React → Express → FastAPI boundary. Read it with `rc architecture show system-architecture`. RC manages the diagram separately from these repository documents.
 

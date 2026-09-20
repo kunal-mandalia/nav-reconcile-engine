@@ -1,12 +1,12 @@
 # State and data design — demo draft
 
-Status: proposed implementation design, not an implemented schema. Builds on the [implementation plan](provisional.md) and [architecture decisions](architectural-considerations.md). Public request/response sketches are in [API contracts](api-contracts.md). The existing HTML proposal is illustrative and does not yet implement these contracts.
+Status: target persistence design; no database migrations yet. The TypeScript mock implements the public run lifecycle and decision shapes in memory. See [running the mock](../../README.md) and [shared runtime schemas](../../packages/contracts/src/index.ts). Builds on the [implementation plan](provisional.md) and [architecture decisions](architectural-considerations.md). Public request/response sketches are in [API contracts](api-contracts.md). The existing HTML proposal is illustrative and does not yet implement these contracts.
 
 ## 1. Scope and ownership
 
 A **reconciliation period** groups one fund and reporting period, including its selected pack, rules and run history. For example, “Atlas Growth Fund IV — Q2 2026” remains the same reconciliation period when a revised pack is uploaded or another run is started. Use `reconciliation_period` as the entity name and **Fund reconciliation** as the UI label.
 
-Working demo assumption: reconcile one whole fund, one reporting period and one base currency. No investor allocation, share-class accounting, FX conversion or valuation verification in the first slice. Keep the selected entity scope explicit so an investor statement cannot accidentally become a whole-fund input. These are proposed defaults pending agreement, not inferred accounting policy.
+Working demo assumption: reconcile one whole fund, one reporting period and one base currency. No investor allocation, share-class accounting, FX conversion or valuation verification in the first slice. Keep the selected entity scope explicit so an investor statement cannot accidentally become a whole-fund input. Whole-fund scope and a known input layout are agreed for the demo. Differences in layout should produce needs input; broader adaptation is a later extension.
 
 **Compact first slice:** Seed the funds, periods, pack manifests and rules; keep their selection fixed while the demo runs. Expose only fund listing, run creation, run reads and cited-document reads. A run response embeds decision facts and evidence locations. Public uploads, selection changes, review commands and dedicated history/evidence APIs are later extensions. The broader lifecycle below describes how those extensions fit, not additional first-demo endpoints.
 
@@ -15,7 +15,7 @@ Working demo assumption: reconcile one whole fund, one reporting period and one 
 | React | Selected fund/period, local filters, open evidence, run progress; a cache of server responses | Authoritative run state, permissions or NAV arithmetic |
 | Express | Demo principal and fund grants, public request checks, rate limits, API error mapping, request IDs | Financial calculations, database writes or source files |
 | Python/FastAPI | Durable domain state, source files, extraction, rules, background execution and result publication | Public login or user-facing rate-limit policy |
-| DuckDB + filesystem | Structured records and immutable source bytes, both accessed through Python | Independent application logic |
+| Postgres + filesystem | Structured records and immutable source bytes, both accessed through Python | Independent application logic |
 
 React polls server state and derives no match decision locally. Express forwards money as strings. Python accepts actor/resource context only from the authenticated Express service, checks scope consistency and enforces domain constraints.
 
@@ -85,12 +85,12 @@ The list is a server-derived view for a fund and period, not an independently ed
 
 - Generate opaque UUIDs on the server. Human labels such as “Run #1042” are optional display fields, not keys. Examples in API sketches abbreviate IDs for readability.
 - Store timestamps in UTC (`TIMESTAMPTZ`); emit RFC 3339 timestamps. Reporting dates and period boundaries are `DATE`, not instants. Period movements cover the declared start and end dates inclusively; opening NAV is as of the preceding date, closing NAV as of the end date.
-- Use Python `Decimal` with an explicit calculation precision of at least 50 digits and DuckDB `DECIMAL(38, 6)` for normalised money. Reject overflow or unsupported precision rather than silently truncating. Round only for display; apply tolerance to the unrounded difference. Return decimal strings over JSON so JavaScript never converts monetary values to binary floating point.
+- Use Python `Decimal` with an explicit calculation precision of at least 50 digits and Postgres `NUMERIC(38,6)` for normalised money. Reject overflow or unsupported precision rather than silently truncating. Round only for display; apply tolerance to the unrounded difference. Return decimal strings over JSON so JavaScript never converts monetary values to binary floating point.
 - Keep currency explicitly, with a supported-currency allowlist for the demo. Store scale separately from the original text: `1`, `1000` or `1000000`. Normalise to actual currency units before arithmetic. Unknown currency or scale means unresolved evidence.
 - Use non-negative `capital_calls` and `distributions` magnitudes, and signed `net_income`. The formula is `opening_nav + capital_calls - distributions + net_income`. Source signs are preserved and normalisation records how an outflow became a distribution magnitude. Reversals or unusual conventions need explicit mappings; never blindly take an absolute value.
 - Store raw documents and extraction blocks without forcing them into the canonical accounting schema. Only the facts used in a decision receive the small typed schema below. This retains the original late-binding design.
 
-DuckDB documents fixed-point decimals separately from approximate floating point; decimal division can return floating point. Keep the initial roll-forward to decimal addition/subtraction and use Python Decimal for any later ratio calculations. [DuckDB numeric types](https://duckdb.org/docs/current/sql/data_types/numeric)
+Postgres `NUMERIC(38,6)` stores exact decimal quantities but rounds inputs beyond its declared scale. Validate precision, scale and finite values before insertion so unsupported inputs cannot silently change. The TypeScript mock uses `decimal.js`; the planned service uses Python `Decimal`. [Postgres numeric types](https://www.postgresql.org/docs/current/datatype-numeric.html)
 
 ## 4. Logical schemas
 
@@ -106,8 +106,8 @@ The first slice needs the fund/period/pack/document records plus runs, facts, ch
 | `pack` | `id`, `reconciliation_period_id`, `version INTEGER`, `supersedes_pack_id?`, `state`, `manifest_sha256`, `issues JSON`, `created_by`, `created_at`, `indexed_at?` | Unique `(reconciliation_period_id, version)`. Immutable membership after upload finalisation. Superseded pack must belong to the same reconciliation period. State/issues can change only during processing. |
 | `document` | `id`, `pack_id`, `original_filename`, `storage_key`, `sha256`, `media_type`, `byte_size BIGINT`, `role?`, `detected_metadata JSON`, `index_manifest JSON` | Belongs to one pack; content and hash immutable. Same bytes can have new document records in another pack. Storage paths are private. One file can supply several input facts. |
 | `reconciliation_run` | `id`, `reconciliation_period_id`, `pack_id`, `retry_of_run_id?`, `state`, `stage`, `outcome?`, `input_snapshot JSON`, `rule_config_hash`, `requested_by`, `request_id`, `created_at`, `started_at?`, `stage_updated_at`, `completed_at?`, `error JSON?` | Run's pack belongs to its reconciliation period. Snapshot fixed at creation; completed outcome and results immutable. Failed runs have a technical error and no financial outcome. |
-| `extracted_fact` | `id`, `run_id`, `document_id`, `field`, `raw_text`, `normalised_amount DECIMAL(38,6)?`, `currency?`, `scale?`, `selection_state`, `confidence_score?`, `locator JSON`, `normalisation_steps JSON`, `extractor_version` | `field`: opening NAV, calls, distributions, net income, reported NAV, prior closing NAV. Selection is `selected`, `candidate` or `rejected`; at most one selected fact per run/field in this first slice. Document must be in the frozen pack or explicit baseline input. |
-| `check_result` | `id`, `run_id`, `check_type`, `required BOOLEAN`, `status`, `reason_code?`, `expected_amount?`, `reported_amount?`, `difference_amount?`, `tolerance_amount?`, `currency?`, `input_fact_ids JSON`, `details JSON` | Unique `(run_id, check_type)`. Monetary columns use `DECIMAL(38,6)`. Every referenced fact belongs to the run. `not_evaluated` records missing/unreliable inputs without inventing amounts. |
+| `extracted_fact` | `id`, `run_id`, `document_id`, `field`, `raw_text`, `normalised_amount NUMERIC(38,6)?`, `currency?`, `scale?`, `selection_state`, `confidence_score?`, `locator JSON`, `normalisation_steps JSON`, `extractor_version` | `field`: opening NAV, calls, distributions, net income, reported NAV, prior closing NAV. Selection is `selected`, `candidate` or `rejected`; at most one selected fact per run/field in this first slice. Document must be in the frozen pack or explicit baseline input. |
+| `check_result` | `id`, `run_id`, `check_type`, `required BOOLEAN`, `status`, `reason_code?`, `expected_amount?`, `reported_amount?`, `difference_amount?`, `tolerance_amount?`, `currency?`, `input_fact_ids JSON`, `details JSON` | Unique `(run_id, check_type)`. Monetary columns use `NUMERIC(38,6)`. Every referenced fact belongs to the run. `not_evaluated` records missing/unreliable inputs without inventing amounts. |
 | `decision_commentary` | `id`, `run_id`, `sequence INTEGER`, `kind`, `text`, `check_ids JSON`, `fact_ids JSON`, `template_version` | Ordered statements distinguish observed findings from suggested next actions. Numerical/causal claims require check/fact references. No uncited claim explaining an unknown variance. |
 | `review_event` | `id`, `run_id`, `sequence INTEGER`, `action`, `actor_id`, `assignee_id?`, `reason?`, `created_at` | Append-only ownership, note and review changes; unique `(run_id, sequence)`. Current review is projected from events. Compare expected review sequence on writes. Reviewer approval never mutates check outcomes. |
 | `idempotency_record` | `actor_id`, `operation`, `key`, `request_hash`, `resource_id`, `created_at`, `expires_at` | Unique `(actor_id, operation, key)`. Links a retry to the original pack/run; different payload under the same key is a conflict. See transaction rules below. |
@@ -161,11 +161,11 @@ Other locator variants: PDF `{kind, page_number, bbox, coordinate_system}` with 
 1. Read the frozen manifest; confirm documents belong to the run's reconciliation period/pack or approved baseline.
 2. Extract candidates with raw values, locations, units and parser versions. Validate field semantics and select a unique eligible fact for each required field.
 3. If a required fact is missing, conflicting or has unresolved scope/currency/scale, create a `not_evaluated` check with a specific reason. Missing income is not zero income.
-4. Calculate the roll-forward with Decimal. Define `difference = calculated_nav - reported_nav`. Pass when `abs(difference) <= absolute_tolerance`. Proposed fixture tolerance is `100.000000` in the reconciliation period currency, not a settled production policy.
+4. Calculate the roll-forward with Decimal. Define `difference = calculated_nav - reported_nav`. Pass when `abs(difference) <= absolute_tolerance`. Agreed demo tolerance is `0.010000` in the reconciliation period currency, not a settled production policy.
 5. Evaluate configured additional checks, aggregate the outcome using the rules above, and generate short deterministic commentary linked to check/fact IDs.
 6. Commit results, commentary and terminal run status together. Expose completed results only after this commit.
 
-Example: `120000000 + 12000000 - 4000000 + 700000 = 128700000`. Reported NAV `128450000` gives `+250000`, outside the illustrative USD 100 tolerance. State the discrepancy; suggest requesting an administrator explanation without asserting a hidden fee or adjustment caused it.
+Example: `120000000 + 12000000 - 4000000 + 700000 = 128700000`. Reported NAV `128450000` gives `+250000`, outside the agreed demo USD 0.01 tolerance. State the discrepancy; suggest requesting an administrator explanation without asserting a hidden fee or adjustment caused it.
 
 ## 6. Transactions, retries and versioning
 
@@ -181,7 +181,7 @@ For the compact demo, implement Start, Queue admission, Duplicate request, Reque
 - **Publish:** Write facts, checks, commentary and completed state in one short transaction after processing. Failed runs may retain diagnostic extraction artifacts, but they have no published financial decision. A newer selected pack never changes an older run while it executes.
 - **Review:** Validate the proposed transition and expected review sequence, then append an event transactionally. Review commands apply to an explicit run ID. Historical approval remains historical when current inputs change.
 
-Proposed demo runtime: one Python server process, one background reconciliation worker and serialised state mutations; use a bounded local queue so requests can return quickly and reject overload explicitly. Database work must not hold a shared transaction open while files are parsed. Express stays responsive and never opens DuckDB. DuckDB supports concurrent writers within one process; this plan deliberately limits concurrency for a predictable demo. A later multi-process service should reconsider storage and durable scheduling. [DuckDB concurrency](https://duckdb.org/docs/stable/connect/concurrency.html)
+Planned runtime: Postgres in local Docker Compose, one Python server process and a bounded reconciliation worker. Lock the reconciliation-period row when admitting a run and enforce at most one active run per period with a partial unique index. Keep transactions short; file parsing happens outside them. Express never accesses Postgres or source storage directly. The current mock uses a single-process in-memory adapter with elapsed-time stages, no queue or durability; restarting resets all runs and idempotency keys.
 
 ## 7. First implementation slices and review cases
 
@@ -197,8 +197,8 @@ The static prototype's success and failure funds can become these fixtures. Draf
 
 ## 8. Decisions still open
 
-- Confirm whole-fund scope versus investor capital accounts; investor support needs a separate account identity and reconciliation period key, not an ambiguous optional text label.
-- Agree mandatory checks, evidence precedence, acceptable units/precision, supported currencies and tolerance policy. The current USD 100 example is illustrative.
+- Whole-fund scope is agreed for the demo. A future investor-account extension needs a separate account identity and reconciliation period key.
+- Demo checks are input alignment and capital roll-forward, with a 0.01 tolerance in the fund currency and six decimal places. Confirm evidence precedence and production policy before expanding beyond the known layout.
 - Review actions are a documented follow-on to the compact demo; state/schema support does not imply a complete approval product.
 - Set actual upload, concurrency, queue and rate limits from sample packs and available demo hardware. Identify what to do when an administrator pack cannot be safely parsed.
-- Choose fixture identities and fund permissions; real login, durable jobs, FX, multi-tenant operation, editable extraction mappings and live VLM/Jev integration remain outside the initial slice.
+- Current fixtures: Alex has operations access to all six funds; Priya has read-only access to Meridian and Cove. Real login, durable jobs, FX, multi-tenant operation, editable extraction mappings and live VLM/Jev integration remain outside the initial slice.

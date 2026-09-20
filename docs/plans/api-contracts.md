@@ -1,18 +1,30 @@
 # API contracts — compact demo
 
-Proposed contracts, not implemented endpoints. The first demo exposes **four public endpoints** covering the requested fund list, status, rerun and decision/source drilldown. The [state and data design](state-and-data.md) preserves the domain model without exposing every entity as a resource API.
+These four endpoints are implemented in the TypeScript mock Express server and consumed by the React app. The shared [Zod schemas and inferred TypeScript types](../../packages/contracts/src/index.ts) define the executable contract. Python/FastAPI and persistence remain planned. The first demo exposes **four public endpoints** covering the requested fund list, status, rerun and decision/source drilldown. The [state and data design](state-and-data.md) preserves the domain model without exposing every entity as a resource API.
 
 ## 1. Demo scope and conventions
 
-Seed funds, reconciliation periods, complete document packs and rules locally. Use actual sample documents for extraction; seeded inputs do not mean simulated reconciliation. Keep input selection fixed while the demo runs. Upload, pack selection, rule editing, review commands and dedicated history routes are extensions, not prerequisites.
+Seed funds, reconciliation periods, complete document packs and rules locally. The current mock simulates extraction using generated CSV fixtures and performs deterministic decimal arithmetic. The next service slice will extract from actual sample documents. Keep input selection fixed while the demo runs. Upload, pack selection, rule editing, review commands and dedicated history routes are extensions, not prerequisites.
 
-A `reconciliation_period` remains the internal grouping for a fund and reporting period. Return `reconciliation_period_id` where the UI needs it to start a run; there is no separate `/reconciliation-periods` endpoint. The UI label remains **Fund reconciliation**. IDs in examples are abbreviated; implementations use UUIDs.
+A `reconciliation_period` remains the internal grouping for a fund and reporting period. Return `reconciliation_period_id` where the UI needs it to start a run; there is no separate `/reconciliation-periods` endpoint. The UI label remains **Fund reconciliation**. Examples below are abbreviated design illustrations, including future PDF/spreadsheet locators; the runnable mock uses UUIDs and CSV locators. Use the shared schemas for the complete wire shape.
 
-React calls `/api/v1` on Express; Python exposes the corresponding four operations under `/internal/v1`. Express owns demo identity, fund permission checks, rate limits, validation and request IDs. Python owns reconciliation, persistence and idempotency. Private service credentials and trusted actor/fund context are never accepted directly from the browser.
+React calls `/api/v1` on Express. Currently Express uses an in-memory `FundService` adapter; the planned Python service will expose the corresponding four operations under `/internal/v1`. Express owns demo identity, fund permission checks, rate limits, validation and request IDs. Python owns reconciliation, persistence and idempotency. Private service credentials and trusted actor/fund context are never accepted directly from the browser.
 
 For lists, Express forwards the caller's authorised fund IDs and Python filters before returning any rows or counts. For run/source access, Express forwards that allowlist as trusted scope; Python verifies resource ownership before returning data. Express defines user permissions; Python enforces resource membership against the supplied scope. This avoids a separate ownership-lookup endpoint. Rerun permission is checked by Express as well as the target fund's membership in the read/write scope.
 
 Use decimal strings for money, UTC RFC 3339 event timestamps and date-only reporting boundaries. Null is unknown, not zero. JSON responses include `schema_version: 1`; binary source responses use their document media type. Return and propagate `X-Request-ID`; request IDs trace attempts, while idempotency keys identify one intended mutation. Reject unknown command fields.
+
+## Current mock details
+
+- Local-only explicit mock mode: `npm run dev`; Express on `127.0.0.1:4000`, Vite on `127.0.0.1:5173` proxies `/api`. No extra public endpoints or browser-only fixtures.
+- `Authorization: Bearer demo-operations` (all six funds, run permission), or `Bearer demo-reviewer` (Meridian and Cove, read only). These are public demonstration tokens, not secure login. The server executable refuses production mode.
+- Read limit: 180 requests/minute per identity; run limit: 6/minute. Responses have `X-Request-ID`, `Cache-Control: no-store`; `429` includes `Retry-After` in seconds.
+- Q2 2026 is seeded; an unseeded valid period returns an empty list. The fund shape also includes `strategy`, `last_run_at` and `status_reason`. `not_run` represents a ready pack with no attempt yet.
+- Every run state includes `fund`, immutable `inputs`, `pack_id`, `created_at`, `stage_updated_at` and `poll_url`. This allows the UI to open active/failed runs directly without another fund-detail route. Completed responses add facts/checks/commentary/sources; failed responses have an error and no financial decision.
+- Source entries include `media_type`. Current sources are generated CSV bytes; locators specify one-based data-record and column positions. The download is the same original fixture used to construct the cited fact, not a separately invented preview.
+- Monetary strings have exactly six fractional digits. Demo tolerance is `0.010000` in each fund's currency. Precision must fit the planned `NUMERIC(38,6)` columns.
+- The mock advances through five elapsed-time stages (one second each by default), materialised on the next API read. There is no actual extraction worker. Idempotency records and historical run/source snapshots last only until server restart; the planned Postgres service makes them durable.
+- Mock HTTP errors cover validation, access, missing resources, active-run conflicts, idempotency conflicts and rate limits. Pack-not-ready, downstream timeouts and queue saturation remain planned service cases.
 
 ## 2. Four public endpoints
 
@@ -90,7 +102,7 @@ Poll `GET /runs/{run_id}` approximately every two seconds while active; pause wh
 
 ## 4. One run response for the detail view
 
-The complete example below embeds the selected facts and original-source links. There is no additional evidence lookup. During processing return run identity/state/stage with `outcome: null` and no final decision fields. On technical failure include a safe `error`; after completion return the immutable decision:
+The illustrative example below embeds the selected facts and original-source links. There is no additional evidence lookup. During processing return run identity/state/stage with `outcome: null` and no final decision fields. On technical failure include a safe `error`; after completion return the immutable decision:
 
 ```json
 {
@@ -108,7 +120,7 @@ The complete example below embeds the selected facts and original-source links. 
     "entity_scope": "fund",
     "currency": "USD",
     "ruleset_version": "capital-roll-forward-v1",
-    "absolute_tolerance": "100.000000"
+    "absolute_tolerance": "0.010000"
   },
   "summary": {
     "reported_nav": "128450000.000000",
@@ -133,7 +145,7 @@ The complete example below embeds the selected facts and original-source links. 
       "expected_amount": "128700000.000000",
       "reported_amount": "128450000.000000",
       "difference_amount": "250000.000000",
-      "tolerance_amount": "100.000000",
+      "tolerance_amount": "0.010000",
       "currency": "USD",
       "input_fact_ids": ["fact-opening", "fact-calls", "fact-distributions", "fact-income", "fact-reported"]
     }
@@ -153,7 +165,7 @@ The complete example below embeds the selected facts and original-source links. 
   "commentary": [
     {
       "kind": "finding",
-      "text": "Calculated NAV is USD 250,000 above reported NAV, exceeding the USD 100 tolerance. The supplied documents do not explain the variance.",
+      "text": "Calculated NAV is USD 250,000 above reported NAV, exceeding the USD 0.01 tolerance. The supplied documents do not explain the variance.",
       "check_ids": ["check-roll-forward"],
       "fact_ids": ["fact-opening", "fact-calls", "fact-distributions", "fact-income", "fact-reported"]
     },
@@ -209,4 +221,4 @@ A completed poll returns `200` even when the financial outcome is `mismatch` or 
 | Large portfolios/evidence | Server pagination/filtering; dedicated evidence reads if payloads grow | Current fields and provenance IDs |
 | Edit rules or input selection | Explicit selection/rule commands; add expected revision to run creation | Snapshot rules/tolerance in every run |
 
-Generate shared types from the four operation schemas when implementation starts; public and internal security differ but domain shapes can be reused. First acceptance path: authorised fund list → rerun → poll → decision → original cited document. Test forbidden access, duplicate POSTs, exact decimal round-tripping and technical-vs-financial failure states before adding more endpoints.
+Shared runtime schemas and inferred types now live in `packages/contracts`; public and internal security differ but domain shapes can be reused. First acceptance path: authorised fund list → rerun → poll → decision → original cited document. Test forbidden access, duplicate POSTs, exact decimal round-tripping and technical-vs-financial failure states before adding more endpoints.
