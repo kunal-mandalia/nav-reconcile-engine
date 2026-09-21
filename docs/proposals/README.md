@@ -15,7 +15,7 @@ Search, filters, detail tabs, source previews, simulated reruns and filtered CSV
 
 ## Planned application integration
 
-The agreed demo architecture is **React → Node.js/Express client API → Python/FastAPI reconciliation service → DuckDB and local files**. The HTML proposal remains a standalone visual reference, not a running implementation of this stack.
+The agreed demo architecture is **React → Node.js/Express client API → Python/FastAPI reconciliation service → Postgres and local files**. The HTML proposal remains a standalone visual reference, not a running implementation of this stack.
 
 The compact first implementation uses four API operations: list funds, start a run, read its decision/evidence and open an original source document. Sample packs and rules are seeded locally. Upload/revision controls, review actions, export and dedicated history browsing shown or discussed in this proposal are later extensions, not first-demo requirements. See the [compact API contract](../plans/api-contracts.md).
 
@@ -43,3 +43,9 @@ The proposal's **Scope & UX gaps** dialog also contains these considerations, wi
 - Which source document takes precedence when administrator statements disagree?
 
 The capital roll-forward, tolerance, example checks and review roles are UX assumptions for discussion, not final business rules. Source excerpts demonstrate the evidence interaction; production should open the actual document at its cited location.
+
+## Agent workflow proposal
+
+Open [agent-workflow.html](agent-workflow.html) for the proposed document index → ranged reads → VLM interpretation → exact verification → deterministic reconciliation workflow. It includes interactive stage traces, actual PDF previews, acceptance-gate scenarios, tool/budget contracts, evaluation strategy and implementation increments. It builds on the architecture and state/data plans; no agent runtime is implemented by this proposal.
+
+The [Harbor Infrastructure III fixtures](fixtures/harbor-infrastructure-iii/README.md) include two messy CSVs, three searchable PDFs, a source-hash manifest, an explicit expected-result oracle and a reproducible generator. Local assets work alongside the HTML without a server. The new fund has not been seeded into the app.

@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "purpose": "Test oracle only. Never include this file in agent tools or model context.",
+  "fund": {
+    "id": "00000000-0000-4000-8000-000000000007",
+    "name": "Harbor Infrastructure III",
+    "currency": "USD",
+    "entity_scope": "fund"
+  },
+  "period": {
+    "start": "2026-04-01",
+    "end": "2026-06-30"
+  },
+  "source_scale": "1000",
+  "reconciliation_tolerance": "0.010000",
+  "extraction_agreement_tolerance": "0.000000",
+  "baseline": {
+    "files": [
+      "capital_account_messy.csv",
+      "quarterly_report.pdf"
+    ],
+    "facts": {
+      "opening_nav": "84000000.000000",
+      "capital_calls": "6250000.000000",
+      "distributions": "2100000.000000",
+      "net_income": "-375000.000000",
+      "reported_nav": "87700000.000000"
+    },
+    "calculated_nav": "87775000.000000",
+    "difference": "75000.000000",
+    "outcome": "mismatch",
+    "unsupported_cause": true
+  },
+  "matched": {
+    "files": [
+      "capital_account_matched.csv",
+      "quarterly_report_matched.pdf"
+    ],
+    "facts": {
+      "opening_nav": "84000000.000000",
+      "capital_calls": "6250000.000000",
+      "distributions": "2100000.000000",
+      "net_income": "-375000.000000",
+      "reported_nav": "87775000.000000"
+    },
+    "calculated_nav": "87775000.000000",
+    "difference": "0.000000",
+    "outcome": "matched"
+  },
+  "conflicting_sources": {
+    "files": [
+      "capital_account_messy.csv",
+      "quarterly_report_conflict.pdf"
+    ],
+    "conflict_field": "reported_nav",
+    "csv_amount": "87700000.000000",
+    "pdf_amount": "87800000.000000",
+    "selected_reported_nav": null,
+    "calculated_nav": null,
+    "difference": null,
+    "outcome": "insufficient_evidence",
+    "reason_code": "CONFLICTING_SOURCES"
+  },
+  "injected_vlm_disagreement": {
+    "kind": "scripted model response; not a separate source pack",
+    "field": "reported_nav",
+    "vlm_raw_text": "87,701",
+    "vlm_normalised_amount": "87701000.000000",
+    "source_normalised_amount": "87700000.000000",
+    "outcome": "insufficient_evidence",
+    "reason_code": "EXTRACTION_DISAGREEMENT"
+  },
+  "locations": {
+    "opening_nav": {
+      "csv": {
+        "record_index": 13,
+        "column_index": 2,
+        "column_name": "Current quarter",
+        "indexing": "one-based logical CSV records including all preamble records; NOT legacy data-record numbering"
+      },
+      "pdf": {
+        "page_number": 3,
+        "bbox": [
+          401.304,
+          255.484,
+          438.0,
+          267.484
+        ],
+        "coordinate_system": "top_left_points"
+      },
+      "raw_text": "84,000"
+    },
+    "capital_calls": {
+      "csv": {
+        "record_index": 14,
+        "column_index": 2,
+        "column_name": "Current quarter",
+        "indexing": "one-based logical CSV records including all preamble records; NOT legacy data-record numbering"
+      },
+      "pdf": {
+        "page_number": 3,
+        "bbox": [
+          407.976,
+          298.484,
+          438.0,
+          310.484
+        ],
+        "coordinate_system": "top_left_points"
+      },
+      "raw_text": "6,250"
+    },
+    "distributions": {
+      "csv": {
+        "record_index": 15,
+        "column_index": 2,
+        "column_name": "Current quarter",
+        "indexing": "one-based logical CSV records including all preamble records; NOT legacy data-record numbering"
+      },
+      "pdf": {
+        "page_number": 3,
+        "bbox": [
+          399.984,
+          341.484,
+          438.0,
+          353.484
+        ],
+        "coordinate_system": "top_left_points"
+      },
+      "raw_text": "(2,100)"
+    },
+    "net_income": {
+      "csv": {
+        "record_index": 16,
+        "column_index": 2,
+        "column_name": "Current quarter",
+        "indexing": "one-based logical CSV records including all preamble records; NOT legacy data-record numbering"
+      },
+      "pdf": {
+        "page_number": 3,
+        "bbox": [
+          409.992,
+          384.484,
+          438.0,
+          396.484
+        ],
+        "coordinate_system": "top_left_points"
+      },
+      "raw_text": "(375)"
+    },
+    "reported_nav": {
+      "csv": {
+        "record_index": 17,
+        "column_index": 2,
+        "column_name": "Current quarter",
+        "indexing": "one-based logical CSV records including all preamble records; NOT legacy data-record numbering"
+      },
+      "pdf": {
+        "page_number": 3,
+        "bbox": [
+          401.304,
+          427.484,
+          438.0,
+          439.484
+        ],
+        "coordinate_system": "top_left_points"
+      },
+      "raw_text": "87,700"
+    }
+  }
+}

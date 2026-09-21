@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "fund_id": "00000000-0000-4000-8000-000000000007",
+  "files": [
+    {
+      "filename": "capital_account_matched.csv",
+      "sha256": "7ef3bf5dcb26d8ab4f85cf4816d698ddc2602289d1603aaac2ae466fe531005e",
+      "bytes": 1183
+    },
+    {
+      "filename": "capital_account_messy.csv",
+      "sha256": "97282f57a02db0a0ef2a6926a80c99c51f7c177b91dff0f71c546371625678b6",
+      "bytes": 1183
+    },
+    {
+      "filename": "quarterly_report.pdf",
+      "sha256": "3505b346c05d2c27003a1a66271f69157c474bbd5240a275d9b1e7a1adeb0832",
+      "bytes": 7170
+    },
+    {
+      "filename": "quarterly_report_conflict.pdf",
+      "sha256": "749699d0bcae926212ac2ef6caf835ce4eb1ad3c6ce509a519bcb113cc451b91",
+      "bytes": 7170
+    },
+    {
+      "filename": "quarterly_report_matched.pdf",
+      "sha256": "40764d141e04cd53e98a5dac166619de8bc3ca7f78214eac9def145778b42216",
+      "bytes": 7172
+    }
+  ]
+}

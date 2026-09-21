@@ -1,0 +1,24 @@
+﻿HARBOR INFRASTRUCTURE III
+Quarterly administrator export,Fictional demonstration data
+Reporting scope,Whole fund,Not an investor capital account
+Period,2026-04-01,2026-06-30
+Currency / scale,USD,All monetary amounts below in thousands
+
+Historical comparison ONLY - quarter ended 31 March 2026
+Line item,Q1 2026,Notes
+Closing partners' capital,"84,000","Prior quarter, not current reported NAV"
+
+Current reporting period - 1 April to 30 June 2026
+Line item,Current quarter,Comparative Q1,Notes
+Opening partners' capital,"84,000","80,125",Whole-fund balance or quarter movement
+Capital funded during the quarter,"6,250","5,000",Whole-fund balance or quarter movement
+Cash returned to partners,"(2,100)",(900),Whole-fund balance or quarter movement
+Net result for the period,(375),(225),"Loss shown in accounting brackets.
+No explanation of closing variance supplied."
+Closing partners' capital,"87,775","84,000",Whole-fund balance or quarter movement
+
+Investor account illustration ONLY
+Account,Closing balance,Scope
+Limited partner example,"8,770",Investor only - not whole fund
+
+Export note,"Blank rows, repeated labels and ragged records are intentional."
