@@ -17,6 +17,16 @@ describe("four-operation mock API", () => {
       service: new MockFundService({ now: () => clock }),
     });
   });
+  it("identifies the selected adapter even on errors and ignores a forged source header", async () => {
+    const response = await request(app)
+      .get("/api/v1/funds")
+      .set("Authorization", operations)
+      .set("X-Data-Source", "fund-service");
+    expect(response.headers["x-data-source"]).toBe("mock");
+    const denied = await request(app).get("/api/v1/funds");
+    expect(denied.status).toBe(401);
+    expect(denied.headers["x-data-source"]).toBe("mock");
+  });
   const funds = async (app: ReturnType<typeof createApp>) =>
     FundListSchema.parse(
       (

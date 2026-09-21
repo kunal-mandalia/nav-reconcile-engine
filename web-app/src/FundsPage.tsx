@@ -262,7 +262,7 @@ export function FundsPage({ identity }: { identity: Identity }) {
                 <p>
                   {funds.length
                     ? "Try another name or clear the status filter."
-                    : "The mock workspace has sample packs for Q2 2026."}
+                    : "This demo has sample packs for Q2 2026."}
                 </p>
                 <button
                   className="btn"
@@ -303,8 +303,7 @@ export function FundsPage({ identity }: { identity: Identity }) {
                   : "Priya can see two assigned funds and inspect their evidence. Reconciliation actions require operations access."}
               </p>
               <small>
-                Fictional sample packs · Fixed input layout · 0.01 tolerance ·
-                No live fund service
+                Fictional sample packs · Fixed input layout · 0.01 tolerance
               </small>
             </div>
           </div>

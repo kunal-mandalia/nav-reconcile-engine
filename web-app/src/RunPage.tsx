@@ -63,7 +63,12 @@ function Evidence({
         </div>
         <h3 className="source-filename">{source.filename}</h3>
         <p>
-          {location(fact)} · {run.inputs.currency} · actual units
+          {location(fact)} · {fact.currency} · source values in{" "}
+          {fact.scale === "1000"
+            ? "thousands"
+            : fact.scale === "1000000"
+              ? "millions"
+              : "actual units"}
         </p>
         <div className="source-preview">
           <span className="eyebrow">{fact.field.replaceAll("_", " ")}</span>
@@ -73,7 +78,7 @@ function Evidence({
               <strong>{fact.raw_text}</strong>
             </div>
             <div>
-              <span>Normalised amount · {fact.currency}</span>
+              <span>Normalised amount · {fact.currency} · actual units</span>
               <strong>{amount(fact.amount)}</strong>
             </div>
           </div>
@@ -486,7 +491,7 @@ export function RunPage({ identity }: { identity: Identity }) {
                   <div className="panel-body">
                     <p>
                       {run.state === "failed"
-                        ? "This is a technical failure, not a financial mismatch. The mock is configured to reproduce this failure on retry so you can inspect the error flow."
+                        ? "This is a technical failure, not a financial mismatch. Retrying unchanged source files may reproduce the failure."
                         : "Calculations and source references appear together when processing finishes. You can return to the fund list while this runs."}
                     </p>
                     <Link to="/" className="text-link">

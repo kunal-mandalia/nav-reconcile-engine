@@ -1,0 +1,88 @@
+name: nav-reconcile
+services:
+  web-app:
+    build:
+      context: .
+      dockerfile: web-app/Dockerfile
+    ports:
+      - "127.0.0.1:5173:80"
+    depends_on:
+      web-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  web-server:
+    build:
+      context: .
+      dockerfile: web-server/Dockerfile
+    init: true
+    environment:
+      CLIENT_API_BACKEND: ${CLIENT_API_BACKEND:-fund-service}
+      FUND_SERVICE_URL: http://fund-service:8000
+      FUND_SERVICE_TOKEN: ${FUND_SERVICE_TOKEN:?Run node scripts/setup-local.mjs first}
+      FUND_SERVICE_TIMEOUT_MS: ${FUND_SERVICE_TIMEOUT_MS:-10000}
+      READ_RATE_LIMIT: ${READ_RATE_LIMIT:-180}
+      RUN_RATE_LIMIT: ${RUN_RATE_LIMIT:-6}
+      MOCK_STAGE_MS: ${MOCK_STAGE_MS:-1000}
+    ports:
+      - "127.0.0.1:4000:4000"
+    healthcheck:
+      # TCP liveness avoids consuming the demo identity's API rate budget.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const net=require('node:net'); const s=net.connect(4000,'127.0.0.1',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));s.setTimeout(2000,()=>process.exit(1));",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: nav_demo
+      POSTGRES_USER: nav
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run node scripts/setup-local.mjs first}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nav -d nav_demo"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  fund-service:
+    build:
+      context: .
+      dockerfile: fund-service/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://nav:${POSTGRES_PASSWORD}@postgres:5432/nav_demo
+      FUND_SERVICE_TOKEN: ${FUND_SERVICE_TOKEN:?Run node scripts/setup-local.mjs first}
+      SOURCE_DIR: /data/sources
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - source-files:/data/sources
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+    stop_grace_period: 30s
+volumes:
+  postgres-data:
+  source-files:

@@ -1,18 +1,24 @@
 # API contracts — compact demo
 
-These four endpoints are implemented in the TypeScript mock Express server and consumed by the React app. The shared [Zod schemas and inferred TypeScript types](../../packages/contracts/src/index.ts) define the executable contract. Python/FastAPI and persistence remain planned. The first demo exposes **four public endpoints** covering the requested fund list, status, rerun and decision/source drilldown. The [state and data design](state-and-data.md) preserves the domain model without exposing every entity as a resource API.
+These four endpoints are implemented in Express, backed by either the in-memory mock or the Python/FastAPI service with Postgres, and consumed by the React app. The shared [Zod schemas and inferred TypeScript types](../../packages/contracts/src/index.ts) define the executable contract. Python validates against JSON Schema generated from the same TypeScript contract. The first demo exposes **four public endpoints** covering the requested fund list, status, rerun and decision/source drilldown. The [state and data design](state-and-data.md) preserves the domain model without exposing every entity as a resource API.
 
 ## 1. Demo scope and conventions
 
-Seed funds, reconciliation periods, complete document packs and rules locally. The current mock simulates extraction using generated CSV fixtures and performs deterministic decimal arithmetic. The next service slice will extract from actual sample documents. Keep input selection fixed while the demo runs. Upload, pack selection, rule editing, review commands and dedicated history routes are extensions, not prerequisites.
+Seed funds, reconciliation periods, complete document packs and rules locally. The current mock simulates extraction using generated CSV fixtures and performs deterministic decimal arithmetic. Service mode parses the checked-in fixed-layout CSV files and persists decisions and original sources. Keep input selection fixed while the demo runs. Upload, pack selection, rule editing, review commands and dedicated history routes are extensions, not prerequisites.
 
 A `reconciliation_period` remains the internal grouping for a fund and reporting period. Return `reconciliation_period_id` where the UI needs it to start a run; there is no separate `/reconciliation-periods` endpoint. The UI label remains **Fund reconciliation**. Examples below are abbreviated design illustrations, including future PDF/spreadsheet locators; the runnable mock uses UUIDs and CSV locators. Use the shared schemas for the complete wire shape.
 
-React calls `/api/v1` on Express. Currently Express uses an in-memory `FundService` adapter; the planned Python service will expose the corresponding four operations under `/internal/v1`. Express owns demo identity, fund permission checks, rate limits, validation and request IDs. Python owns reconciliation, persistence and idempotency. Private service credentials and trusted actor/fund context are never accepted directly from the browser.
+React calls `/api/v1` on Express. Express selects an in-memory or HTTP `FundService` adapter; Python exposes the corresponding four operations under `/internal/v1`. Express owns demo identity, fund permission checks, rate limits, validation and request IDs. Python owns reconciliation, persistence and idempotency. Private service credentials and trusted actor/fund context are never accepted directly from the browser.
 
 For lists, Express forwards the caller's authorised fund IDs and Python filters before returning any rows or counts. For run/source access, Express forwards that allowlist as trusted scope; Python verifies resource ownership before returning data. Express defines user permissions; Python enforces resource membership against the supplied scope. This avoids a separate ownership-lookup endpoint. Rerun permission is checked by Express as well as the target fund's membership in the read/write scope.
 
 Use decimal strings for money, UTC RFC 3339 event timestamps and date-only reporting boundaries. Null is unknown, not zero. JSON responses include `schema_version: 1`; binary source responses use their document media type. Return and propagate `X-Request-ID`; request IDs trace attempts, while idempotency keys identify one intended mutation. Reject unknown command fields.
+
+Express sends `X-Data-Source: mock | fund-service` on responses, derived from its selected adapter. This metadata does not change the four endpoints or JSON schemas. The UI confirms the source only after a successful, validated response, never from the frontend build mode or an error response. Transport/server failures mark the connection unavailable and distinguish retained visible data from an initial load failure; cancellation and expected 4xx errors leave the last confirmation unchanged. A successful response without a recognised header displays “Data source unverified”. The badge describes the last observed connection, not a continuous health check. “Fictional sample packs” applies to both modes.
+
+## Runtime selection
+
+Docker runs the React build behind Nginx and the compiled Express client API. Set `CLIENT_API_BACKEND=mock|fund-service` in root `.env` and run `npm run docker:up` to apply it. Express owns this setting; the frontend has no separate mode flag. The startup wrapper runs only the two web containers in mock mode, or waits for FastAPI/Postgres before starting them in service mode. Both use the same four public routes and response schemas. Existing `--mock` and `--service` CLI flags override the environment for local development. Containers publish to loopback only; this remains a demo identity setup.
 
 ## Current mock details
 
@@ -22,9 +28,17 @@ Use decimal strings for money, UTC RFC 3339 event timestamps and date-only repor
 - Q2 2026 is seeded; an unseeded valid period returns an empty list. The fund shape also includes `strategy`, `last_run_at` and `status_reason`. `not_run` represents a ready pack with no attempt yet.
 - Every run state includes `fund`, immutable `inputs`, `pack_id`, `created_at`, `stage_updated_at` and `poll_url`. This allows the UI to open active/failed runs directly without another fund-detail route. Completed responses add facts/checks/commentary/sources; failed responses have an error and no financial decision.
 - Source entries include `media_type`. Current sources are generated CSV bytes; locators specify one-based data-record and column positions. The download is the same original fixture used to construct the cited fact, not a separately invented preview.
-- Monetary strings have exactly six fractional digits. Demo tolerance is `0.010000` in each fund's currency. Precision must fit the planned `NUMERIC(38,6)` columns.
-- The mock advances through five elapsed-time stages (one second each by default), materialised on the next API read. There is no actual extraction worker. Idempotency records and historical run/source snapshots last only until server restart; the planned Postgres service makes them durable.
-- Mock HTTP errors cover validation, access, missing resources, active-run conflicts, idempotency conflicts and rate limits. Pack-not-ready, downstream timeouts and queue saturation remain planned service cases.
+- Monetary strings have exactly six fractional digits. Demo tolerance is `0.010000` in each fund's currency. Precision must fit the `NUMERIC(38,6)` columns.
+- The mock advances through five elapsed-time stages (one second each by default), materialised on the next API read. There is no actual extraction worker. Idempotency records and historical run/source snapshots last only until server restart; service mode stores these in Postgres and original sources in a named file volume.
+- Mock HTTP errors cover validation, access, missing resources, active-run conflicts, idempotency conflicts and rate limits. Service mode also implements pack-not-ready checks, downstream timeouts and bounded queue admission.
+
+## Persistent service mode
+
+`npm run dev:service` starts the connected stack. FastAPI implements the four equivalent `/internal/v1` routes and a private operational `/healthz`; there is no additional public business endpoint. It accepts `Authorization: Bearer <FUND_SERVICE_TOKEN>`, `X-Actor-ID`, JSON `X-Allowed-Fund-IDs`, `X-Can-Run` and `X-Request-ID` supplied by Express. Browser-supplied scope/trace headers are replaced by trusted values. Service credentials never enter the frontend bundle.
+
+Service idempotency records survive restarts. Admission serialises short transactions, rejects an active run for the period, and enforces an eight-run outstanding-work limit by default. A partial unique index also prevents duplicate active runs. A dedicated worker polls the database queue; status reads have no execution side effects. Real processing has no artificial delay. Results publish atomically and terminal runs remain unchanged. Unfinished runs become `PROCESS_INTERRUPTED` at restart; an intentional retry uses a new key. One service instance owns the database through an advisory lock.
+
+The HTTP adapter applies a 10-second timeout, mapping connectivity failures to `503`, timeouts to `504`, invalid service credentials/shapes to `502`, and safe domain errors to their original status. Source reads verify both snapshot membership and SHA-256 before streaming original bytes. Missing/corrupt sources return an explicit error and never rewrite the historical financial result.
 
 ## 2. Four public endpoints
 

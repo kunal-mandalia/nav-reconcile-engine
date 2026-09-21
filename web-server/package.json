@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts --mock",
     "build": "tsup",
-    "start": "node dist/index.js --mock"
+    "start": "node dist/index.js --mock",
+    "dev:service": "node --env-file=../.env --watch --import tsx src/index.ts --service",
+    "start:service": "node --env-file=../.env dist/index.js --service"
   },
   "dependencies": {
     "@nav/contracts": "*",

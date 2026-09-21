@@ -1,3 +1,5 @@
+import { dataSource } from "./data-source";
+
 import {
   FundListSchema,
   RunSchema,
@@ -33,44 +35,60 @@ export class ApiError extends Error {
     super(message);
   }
 }
-async function request(
+async function readJson(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch (error) {
+    if (error instanceof SyntaxError) return null;
+    // Preserve cancellation and failures while streaming the response body.
+    throw error;
+  }
+}
+async function request<T>(
   path: string,
   identity: Identity,
+  read: (response: Response) => Promise<T>,
   init: RequestInit = {},
-): Promise<Response> {
-  let response: Response;
+): Promise<T> {
+  const ticket = dataSource.begin();
   try {
-    response = await fetch(path, {
+    const response = await fetch(path, {
       ...init,
       headers: {
         ...init.headers,
         Authorization: `Bearer ${IDENTITIES[identity].token}`,
       },
     });
+    if (!response.ok) {
+      const parsed = ErrorEnvelopeSchema.safeParse(await readJson(response));
+      const error = parsed.success ? parsed.data.error : undefined;
+      throw new ApiError(
+        response.status,
+        error?.code ?? "REQUEST_FAILED",
+        error?.message ?? "The server could not complete this request.",
+        error?.request_id,
+        Number(response.headers.get("Retry-After") ?? 0),
+        error?.details,
+      );
+    }
+    const value = await read(response);
+    dataSource.confirm(ticket, response.headers.get("X-Data-Source"));
+    return value;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError")
       throw error;
+    // Validation, permissions and rate limits do not prove a downstream outage
+    // or a successful connection. Only usable successful responses confirm it.
+    if (error instanceof ApiError && error.status >= 400 && error.status < 500)
+      throw error;
+    dataSource.fail(ticket);
+    if (error instanceof ApiError) throw error;
     throw new ApiError(
       0,
       "CONNECTION_FAILED",
-      "Cannot reach the demo server. Your last loaded result is preserved.",
+      "Cannot load data from the demo server. Previously loaded results may be out of date.",
     );
   }
-  if (!response.ok) {
-    const parsed = ErrorEnvelopeSchema.safeParse(
-      await response.json().catch(() => null),
-    );
-    const error = parsed.success ? parsed.data.error : undefined;
-    throw new ApiError(
-      response.status,
-      error?.code ?? "REQUEST_FAILED",
-      error?.message ?? "The server could not complete this request.",
-      error?.request_id,
-      Number(response.headers.get("Retry-After") ?? 0),
-      error?.details,
-    );
-  }
-  return response;
 }
 async function json<T>(
   path: string,
@@ -78,16 +96,22 @@ async function json<T>(
   schema: z.ZodType<T>,
   init?: RequestInit,
 ): Promise<T> {
-  const response = await request(path, identity, init);
-  const parsed = schema.safeParse(await response.json());
-  if (!parsed.success)
-    throw new ApiError(
-      502,
-      "INVALID_RESPONSE",
-      "The server response did not match the agreed contract.",
-      response.headers.get("X-Request-ID") ?? undefined,
-    );
-  return parsed.data;
+  return request(
+    path,
+    identity,
+    async (response) => {
+      const parsed = schema.safeParse(await readJson(response));
+      if (!parsed.success)
+        throw new ApiError(
+          502,
+          "INVALID_RESPONSE",
+          "The server response did not match the agreed contract.",
+          response.headers.get("X-Request-ID") ?? undefined,
+        );
+      return parsed.data;
+    },
+    init,
+  );
 }
 export const api = {
   funds: (identity: Identity, period: string, signal?: AbortSignal) =>
@@ -116,8 +140,10 @@ export const api = {
     // Only allow our same-origin source route, never arbitrary URLs from a payload.
     if (!/^\/api\/v1\/runs\/[\w-]+\/sources\/[\w-]+$/.test(source.content_url))
       throw new ApiError(502, "INVALID_SOURCE", "Invalid source link.");
-    const response = await request(source.content_url, identity);
-    const url = URL.createObjectURL(await response.blob());
+    const blob = await request(source.content_url, identity, (response) =>
+      response.blob(),
+    );
+    const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = source.filename;

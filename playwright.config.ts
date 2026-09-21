@@ -1,7 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const serviceMode = process.env.NAV_E2E_MODE === "service";
 export default defineConfig({
   testDir: "./web-app/e2e",
+  testMatch: [
+    serviceMode ? "service.spec.ts" : "flows.spec.ts",
+    "data-source.spec.ts",
+  ],
   fullyParallel: false,
   workers: 1,
   timeout: 30000,
@@ -17,9 +22,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    command: serviceMode ? "npm run dev:service" : "npm run dev",
     url: "http://127.0.0.1:5173",
     reuseExistingServer: !process.env.CI,
-    timeout: 30000,
+    timeout: serviceMode ? 180000 : 30000,
   },
 });

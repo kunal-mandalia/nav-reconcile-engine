@@ -22,13 +22,14 @@ interface AppOptions {
 }
 export function createApp(options: AppOptions = {}) {
   const app = express();
-  const service = options.service ?? new MockFundService();
+  const service: FundService = options.service ?? new MockFundService();
   const now = options.now ?? Date.now;
   app.disable("x-powered-by");
   app.use((_req, res, next) => {
     res.locals.requestId = randomUUID();
     res.set({
       "X-Request-ID": res.locals.requestId,
+      "X-Data-Source": service.dataSource,
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
     });
@@ -47,7 +48,7 @@ export function createApp(options: AppOptions = {}) {
           "Choose a valid demo identity to continue.",
         ),
       );
-    res.locals.principal = principal;
+    res.locals.principal = { ...principal, requestId: res.locals.requestId };
     next();
   });
   app.use(express.json({ limit: "8kb" }));
@@ -177,7 +178,7 @@ export function createApp(options: AppOptions = {}) {
         id(req.params.documentId),
       );
       res
-        .set("Content-Type", "text/csv; charset=utf-8")
+        .set("Content-Type", source.mediaType ?? "text/csv; charset=utf-8")
         .attachment(source.filename)
         .send(source.bytes);
     },

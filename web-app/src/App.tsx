@@ -10,6 +10,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Layers, LayoutGrid, CircleAlert } from "lucide-react";
 import { IDENTITIES, type Identity } from "./api";
+import { dataSource } from "./data-source";
+import { DataSourceIndicator } from "./DataSourceIndicator";
 import { FundsPage } from "./FundsPage";
 import { RunPage } from "./RunPage";
 
@@ -25,6 +27,7 @@ export default function App() {
   function changeIdentity(next: Identity) {
     void client.cancelQueries();
     client.clear();
+    dataSource.reset();
     localStorage.setItem("nav-demo-identity", next);
     setIdentity(next);
     navigate("/");
@@ -33,7 +36,7 @@ export default function App() {
     <>
       <div className="demo-bar">
         <strong>Interactive demo</strong>
-        <span>Fictional data · Mock API · Resets when the server restarts</span>
+        <span>Fictional sample packs</span>
       </div>
       <div className="shell">
         <aside className="sidebar">
@@ -100,6 +103,7 @@ export default function App() {
                 </>
               )}
             </div>
+            <DataSourceIndicator />
             <label className="identity-select">
               <span>Demo identity</span>
               <select
@@ -128,8 +132,8 @@ export default function App() {
           <footer className="app-footer">
             <Layers size={12} />
             <span>
-              Mock fund service · Fixed layouts · Deterministic decisions ·
-              Amounts preserve decimal precision
+              Fixed layouts · Deterministic decisions · Amounts preserve decimal
+              precision
             </span>
           </footer>
         </main>

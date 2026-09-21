@@ -16,7 +16,14 @@
     "typecheck": "tsc --noEmit -p packages/contracts && tsc --noEmit -p web-server && tsc --noEmit -p web-app",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "format": "prettier --write \"web-app/src/**/*.{ts,tsx,css}\" \"web-app/e2e/**/*.ts\" \"web-server/src/**/*.ts\" \"packages/contracts/src/**/*.ts\""
+    "format": "prettier --write \"web-app/src/**/*.{ts,tsx,css}\" \"web-app/e2e/**/*.ts\" \"web-server/src/**/*.ts\" \"packages/contracts/src/**/*.ts\"",
+    "contracts:generate": "tsx packages/contracts/export.ts",
+    "services:up": "node scripts/setup-local.mjs && docker compose up --build -d --wait fund-service",
+    "services:stop": "docker compose stop fund-service postgres",
+    "dev:service": "npm run services:up && concurrently --kill-others -n api,web \"npm run dev:service -w web-server\" \"npm run dev:service -w web-app\"",
+    "test:fund": "node --env-file=.env scripts/test-fund.mjs",
+    "docker:up": "node scripts/setup-local.mjs && node --env-file=.env scripts/docker-up.mjs",
+    "docker:stop": "docker compose stop"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

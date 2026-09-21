@@ -1,0 +1,207 @@
+{
+  "schema_version": 1,
+  "period": {
+    "start": "2026-04-01",
+    "end": "2026-06-30"
+  },
+  "funds": [
+    {
+      "fund": {
+        "fund_id": "00000000-0000-4000-8000-000000000001",
+        "name": "Atlas Growth Fund IV",
+        "administrator": "Citco",
+        "strategy": "Private equity"
+      },
+      "currency": "USD",
+      "reconciliation_period_id": "00000000-0000-4000-8000-000000000101",
+      "pack_id": "00000000-0000-4000-8000-000000000201",
+      "pack_version": 2,
+      "initial_run": true,
+      "documents": [
+        {
+          "document_id": "00000000-0000-4000-8000-000000001000",
+          "filename": "opening_capital.csv",
+          "role": "opening",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001001",
+          "filename": "capital_activity.csv",
+          "role": "activity",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001002",
+          "filename": "capital_statement.csv",
+          "role": "statement",
+          "media_type": "text/csv"
+        }
+      ]
+    },
+    {
+      "fund": {
+        "fund_id": "00000000-0000-4000-8000-000000000002",
+        "name": "Meridian Infrastructure II",
+        "administrator": "SS&C",
+        "strategy": "Infrastructure"
+      },
+      "currency": "EUR",
+      "reconciliation_period_id": "00000000-0000-4000-8000-000000000102",
+      "pack_id": "00000000-0000-4000-8000-000000000202",
+      "pack_version": 1,
+      "initial_run": true,
+      "documents": [
+        {
+          "document_id": "00000000-0000-4000-8000-000000001010",
+          "filename": "opening_capital.csv",
+          "role": "opening",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001011",
+          "filename": "capital_activity.csv",
+          "role": "activity",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001012",
+          "filename": "capital_statement.csv",
+          "role": "statement",
+          "media_type": "text/csv"
+        }
+      ]
+    },
+    {
+      "fund": {
+        "fund_id": "00000000-0000-4000-8000-000000000003",
+        "name": "Oakbridge Private Credit",
+        "administrator": "Aztec",
+        "strategy": "Private credit"
+      },
+      "currency": "GBP",
+      "reconciliation_period_id": "00000000-0000-4000-8000-000000000103",
+      "pack_id": "00000000-0000-4000-8000-000000000203",
+      "pack_version": 1,
+      "initial_run": true,
+      "documents": [
+        {
+          "document_id": "00000000-0000-4000-8000-000000001020",
+          "filename": "opening_capital.csv",
+          "role": "opening",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001021",
+          "filename": "capital_activity.csv",
+          "role": "activity",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001022",
+          "filename": "capital_statement.csv",
+          "role": "statement",
+          "media_type": "text/csv"
+        }
+      ]
+    },
+    {
+      "fund": {
+        "fund_id": "00000000-0000-4000-8000-000000000004",
+        "name": "Cove Real Estate Partners",
+        "administrator": "Citco",
+        "strategy": "Real estate"
+      },
+      "currency": "USD",
+      "reconciliation_period_id": "00000000-0000-4000-8000-000000000104",
+      "pack_id": "00000000-0000-4000-8000-000000000204",
+      "pack_version": 1,
+      "initial_run": true,
+      "documents": [
+        {
+          "document_id": "00000000-0000-4000-8000-000000001030",
+          "filename": "opening_capital.csv",
+          "role": "opening",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001031",
+          "filename": "capital_activity.csv",
+          "role": "activity",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001032",
+          "filename": "capital_statement.csv",
+          "role": "statement",
+          "media_type": "text/csv"
+        }
+      ]
+    },
+    {
+      "fund": {
+        "fund_id": "00000000-0000-4000-8000-000000000005",
+        "name": "Northline Ventures III",
+        "administrator": "SS&C",
+        "strategy": "Venture capital"
+      },
+      "currency": "USD",
+      "reconciliation_period_id": "00000000-0000-4000-8000-000000000105",
+      "pack_id": "00000000-0000-4000-8000-000000000205",
+      "pack_version": 1,
+      "initial_run": false,
+      "documents": [
+        {
+          "document_id": "00000000-0000-4000-8000-000000001040",
+          "filename": "opening_capital.csv",
+          "role": "opening",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001041",
+          "filename": "capital_activity.csv",
+          "role": "activity",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001042",
+          "filename": "capital_statement.csv",
+          "role": "statement",
+          "media_type": "text/csv"
+        }
+      ]
+    },
+    {
+      "fund": {
+        "fund_id": "00000000-0000-4000-8000-000000000006",
+        "name": "Summit Secondaries I",
+        "administrator": "Gen II",
+        "strategy": "Secondaries"
+      },
+      "currency": "EUR",
+      "reconciliation_period_id": "00000000-0000-4000-8000-000000000106",
+      "pack_id": "00000000-0000-4000-8000-000000000206",
+      "pack_version": 1,
+      "initial_run": true,
+      "documents": [
+        {
+          "document_id": "00000000-0000-4000-8000-000000001050",
+          "filename": "opening_capital.csv",
+          "role": "opening",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001051",
+          "filename": "capital_activity.csv",
+          "role": "activity",
+          "media_type": "text/csv"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000001052",
+          "filename": "capital_statement.csv",
+          "role": "statement",
+          "media_type": "text/csv"
+        }
+      ]
+    }
+  ]
+}

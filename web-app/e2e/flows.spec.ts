@@ -174,7 +174,7 @@ test("network errors offer retry without inventing an empty portfolio", async ({
   await page.route("**/api/v1/funds?*", (route) => route.abort("failed"));
   await page.goto("/");
   await expect(page.getByRole("alert")).toContainText(
-    "Cannot reach the demo server",
+    "Cannot load data from the demo server",
   );
   await expect(
     page.getByRole("heading", { name: "No reconciliations for this period" }),
@@ -214,7 +214,7 @@ test("a lost POST response retries the same intent without a duplicate run", asy
   const dialog = page.getByRole("dialog", { name: "Rerun reconciliation" });
   await dialog.getByRole("button", { name: "Start run", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText(
-    "Cannot reach the demo server",
+    "Cannot load data from the demo server",
   );
   await dialog.getByRole("button", { name: "Start run", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/runs/${acceptedRunId}$`));

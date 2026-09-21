@@ -14,6 +14,7 @@ export interface Principal {
   id: string;
   allowedFundIds: string[];
   canRun: boolean;
+  requestId?: string;
 }
 export const DEMO_PRINCIPALS: Record<string, Principal> = {
   "demo-operations": {
@@ -30,6 +31,7 @@ export const DEMO_PRINCIPALS: Record<string, Principal> = {
 /** Replace this adapter with the private FastAPI client; routes and DTOs stay the same. */
 type Awaitable<T> = T | Promise<T>;
 export interface FundService {
+  readonly dataSource: "mock" | "fund-service";
   list(principal: Principal, period: typeof PERIOD): Awaitable<FundList>;
   start(
     principal: Principal,
@@ -42,7 +44,7 @@ export interface FundService {
     principal: Principal,
     runId: string,
     documentId: string,
-  ): Awaitable<{ filename: string; bytes: Buffer }>;
+  ): Awaitable<{ filename: string; bytes: Buffer; mediaType?: string }>;
 }
 interface StoredRun {
   fixture: Fixture;
@@ -50,6 +52,7 @@ interface StoredRun {
   startedAt: number;
 }
 export class MockFundService implements FundService {
+  readonly dataSource = "mock" as const;
   private fixtures = createFixtures();
   private runs = new Map<string, StoredRun>();
   private requests = new Map<string, { fingerprint: string; runId: string }>();

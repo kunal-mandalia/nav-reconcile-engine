@@ -1,0 +1,12 @@
+.git
+.rc
+.env*
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+fund-service/data
+test-results
+playwright-report

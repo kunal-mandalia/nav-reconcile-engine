@@ -1,0 +1,2 @@
+# Preserve original fixture bytes: their SHA-256 hashes are persisted as evidence.
+fund-service/fixtures/**/*.csv -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

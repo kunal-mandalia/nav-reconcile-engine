@@ -8,3 +8,9 @@ playwright-report/
 !.env.example
 *.tsbuildinfo
 .DS_Store
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+fund-service/data/

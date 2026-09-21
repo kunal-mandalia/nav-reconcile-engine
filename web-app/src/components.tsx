@@ -1,3 +1,4 @@
+import { useDataSource } from "./data-source";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
@@ -172,6 +173,7 @@ export function Rerun({
   allowed: boolean;
   first?: boolean;
 }) {
+  const connection = useDataSource();
   const [open, setOpen] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   useEffect(() => {
@@ -259,8 +261,11 @@ export function Rerun({
               </div>
             </dl>
             <p className="demo-note">
-              Mock mode simulates processing. With unchanged inputs, the outcome
-              stays the same. No fund service is called.
+              {connection.status !== "connected"
+                ? "The data source is not currently confirmed. Check the connection before starting a run."
+                : connection.source === "fund-service"
+                  ? "The fund service will read the original source files and reconcile this pack. Earlier results are retained."
+                  : "Mock mode simulates processing. With unchanged inputs, the outcome stays the same. No fund service is called."}
             </p>
             {mutation.error && <ErrorNotice error={mutation.error} />}
           </div>

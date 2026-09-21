@@ -1533,3 +1533,50 @@ dialog::backdrop {
     scroll-behavior: auto !important;
   }
 }
+
+/* The source is confirmed by API responses, independent of the frontend mode. */
+.topbar {
+  flex-wrap: wrap;
+}
+.data-source {
+  margin-left: auto;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f2f3ee;
+  color: #58665d;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.data-source span,
+.data-source small {
+  display: block;
+}
+.data-source span {
+  font-weight: 500;
+}
+.data-source small {
+  font-size: 10px;
+}
+.data-source.service {
+  background: #edf5ee;
+  border-color: #cadfce;
+  color: #315840;
+}
+.data-source.mock {
+  background: #fff5df;
+  border-color: #e9d6a9;
+  color: #78561c;
+}
+.data-source.disconnected {
+  background: #fcf0eb;
+  border-color: #e8cabc;
+  color: #8c4533;
+}
+@media (max-width: 1150px) {
+  .data-source {
+    order: 3;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}

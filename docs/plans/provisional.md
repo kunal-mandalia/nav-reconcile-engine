@@ -2,7 +2,7 @@
 
 This plan is structured for a coding agent to implement a simplified end-to-end prototype for Wednesday's demo.
 
-Agreed stack: **React → Node.js/Express client API → Python/FastAPI reconciliation service → Postgres and filesystem**. The current runnable slice is React and Express in TypeScript, backed by an in-memory mock fund service. Python/FastAPI and Postgres remain planned. See the [run instructions](../../README.md). See [architectural considerations](architectural-considerations.md) for the trust boundary and demo scope.
+Agreed stack: **React → Node.js/Express client API → Python/FastAPI reconciliation service → Postgres and filesystem**. The current runnable stack connects React/Express in TypeScript to Python/FastAPI, Postgres and immutable source files. The in-memory mock remains an optional mode. See the [run instructions](../../README.md). See [architectural considerations](architectural-considerations.md) for the trust boundary and demo scope.
 
 Detailed draft: [state, data and logical schemas](state-and-data.md), plus [API contracts](api-contracts.md). These sketches propose a fund-level first slice, immutable packs/runs and separate execution, outcome and review states.
 
@@ -14,7 +14,7 @@ Detailed draft: [state, data and logical schemas](state-and-data.md), plus [API 
 
 Implemented in TypeScript: four Express routes, shared runtime contracts, fixed demo identities, fund permissions, separate read/run rate budgets, request IDs, in-memory idempotency, simulated stages, immutable decisions, generated CSV source fixtures and React screens. Six funds cover match, mismatch, missing income, not yet run and processing failure. Monetary calculations use `decimal.js` with 50-digit precision; the API carries six-place decimal strings and the demo tolerance is `0.010000`.
 
-This slice does not parse uploaded files or persist across restarts. The phases below describe the target implementation, including Python, Postgres and real parsing.
+The optional mock does not persist across restarts. The connected service slice now parses the checked-in fixed-layout CSV packs, stores exact decimals and immutable decisions in Postgres, and retains source files in a Docker volume. It includes transactional idempotency, bounded database-queue admission, a single background worker, request-ID/scope propagation and interrupted-run handling. Read [service implementation notes](../../fund-service/README.md) for the supported layout and restart policy. The phases below still include future upload/import, Excel/PDF and broader indexing work.
 
 ## Phase 1: Project Setup & Core Infrastructure
 * **Repository Structure:** Use `/web-app` for React, `/web-server` for Express, `/packages/contracts` for shared TypeScript/Zod schemas, and `/fund-service` for the planned Python service with ingestion, indexing, extraction and reconciliation modules.
