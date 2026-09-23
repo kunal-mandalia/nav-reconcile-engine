@@ -8,7 +8,7 @@ A React/TypeScript app and Express API connected to a Python/FastAPI reconciliat
 npm run docker:up
 ```
 
-Open **http://127.0.0.1:5173**. This builds the frontend (served by Nginx), the Express client API and FastAPI, and starts Postgres. It creates an ignored `.env` with local credentials if absent. Requires Node.js 22.12+ and Docker Compose; host npm dependencies and Python are not needed for this path.
+Open **http://127.0.0.1:3005**. This builds the frontend (served by Nginx), the Express client API and FastAPI, and starts Postgres. It creates an ignored `.env` with local credentials if absent. Requires Node.js 22.12+ and Docker Compose; host npm dependencies and Python are not needed for this path.
 
 Set the client API adapter in the root `.env`:
 
@@ -33,7 +33,7 @@ Nginx proxies `/api` to Express using the Compose service name; Express calls `h
 
 ## Develop locally with hot reload
 
-Stop Docker web containers first (`npm run docker:stop`) to free ports 5173 and 4000.
+Stop Docker web containers first (`npm run docker:stop`) to free ports 3005 and 4000.
 
 Requires Node.js 22.12+ (tested with Node 24), npm and a running Docker engine. Python dependencies are installed in the service container; local `uv` is only needed for Python development/tests.
 
@@ -42,11 +42,11 @@ npm ci
 npm run dev:service
 ```
 
-Open **http://127.0.0.1:5173**. The startup command creates a git-ignored `.env` with generated local credentials, builds FastAPI, starts Postgres, applies migrations and registers the sample packs once. Existing credentials and data are preserved.
+Open **http://127.0.0.1:3005**. The startup command creates a git-ignored `.env` with generated local credentials, builds FastAPI, starts Postgres, applies migrations and registers the sample packs once. Existing credentials and data are preserved.
 
 | Process | Address | Storage |
 | --- | --- | --- |
-| React/Vite | `127.0.0.1:5173` | Browser cache and demo identity |
+| React/Vite | `127.0.0.1:3005` | Browser cache and demo identity |
 | Express | `127.0.0.1:4000` | In-memory demo rate limits |
 | FastAPI + one worker | `127.0.0.1:8000` | Private service API; original files in a Docker volume |
 | Postgres 17 | `127.0.0.1:5433` | Named Docker volume for funds, packs, runs, facts, checks and idempotency |

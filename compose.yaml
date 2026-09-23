@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: web-app/Dockerfile
     ports:
-      - "127.0.0.1:5173:80"
+      - "127.0.0.1:3005:80"
     depends_on:
       web-server:
         condition: service_healthy

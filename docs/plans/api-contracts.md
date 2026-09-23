@@ -22,7 +22,7 @@ Docker runs the React build behind Nginx and the compiled Express client API. Se
 
 ## Current mock details
 
-- Local-only explicit mock mode: `npm run dev`; Express on `127.0.0.1:4000`, Vite on `127.0.0.1:5173` proxies `/api`. No extra public endpoints or browser-only fixtures.
+- Local-only explicit mock mode: `npm run dev`; Express on `127.0.0.1:4000`, Vite on `127.0.0.1:3005` proxies `/api`. No extra public endpoints or browser-only fixtures.
 - `Authorization: Bearer demo-operations` (all six funds, run permission), or `Bearer demo-reviewer` (Meridian and Cove, read only). These are public demonstration tokens, not secure login. The server executable refuses production mode.
 - Read limit: 180 requests/minute per identity; run limit: 6/minute. Responses have `X-Request-ID`, `Cache-Control: no-store`; `429` includes `Retry-After` in seconds.
 - Q2 2026 is seeded; an unseeded valid period returns an empty list. The fund shape also includes `strategy`, `last_run_at` and `status_reason`. `not_run` represents a ready pack with no attempt yet.

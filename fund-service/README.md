@@ -11,7 +11,7 @@ npm ci
 npm run dev:service
 ```
 
-This generates local credentials in ignored `.env` if needed, builds the service with its locked Python dependencies, starts Postgres 17 and FastAPI, then starts Express and React. Open http://127.0.0.1:5173. Only loopback ports are published: 5173 (web), 4000 (Express), 8000 (FastAPI), 5433 (Postgres).
+This generates local credentials in ignored `.env` if needed, builds the service with its locked Python dependencies, starts Postgres 17 and FastAPI, then starts Express and React. Open http://127.0.0.1:3005. Only loopback ports are published: 3005 (web), 4000 (Express), 8000 (FastAPI), 5433 (Postgres).
 
 Use Ctrl+C for Node/Vite, then `npm run services:stop` for the containers. Named volumes retain Postgres data and original source bytes. `npm run services:up` starts just the dependencies. `docker compose logs fund-service` shows request/run IDs for tracing.
 
