@@ -52,3 +52,10 @@ def settings(tmp_path):
 def client(settings):
     with TestClient(create_app(settings, run_worker=False)) as instance:
         yield instance
+
+
+@pytest.fixture(autouse=True)
+def no_live_model_requests(monkeypatch):
+    from pydantic_ai import models
+
+    monkeypatch.setattr(models, "ALLOW_MODEL_REQUESTS", False)

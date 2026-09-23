@@ -202,3 +202,7 @@ The static prototype's success and failure funds can become these fixtures. Draf
 - Review actions are a documented follow-on to the compact demo; state/schema support does not imply a complete approval product.
 - Set actual upload, concurrency, queue and rate limits from sample packs and available demo hardware. Identify what to do when an administrator pack cannot be safely parsed.
 - Current fixtures: Alex has operations access to all six funds; Priya has read-only access to Meridian and Cove. Real login, durable jobs, FX, multi-tenant operation, editable extraction mappings and live VLM/Jev integration remain outside the initial slice.
+
+## Implemented agent extension
+
+The optional whole-file agent now freezes its non-secret policy in `input_snapshot` and persists bounded candidates, visual readings and usage in `reconciliation_run.agent_trace` JSONB (migration 002). The canonical fact/check schema remains unchanged. `csv_record` version 1 adds whole-file logical record indexing without changing legacy CSV numbering. Harbor is an optional seventh fund with Alex operations access. See [agent implementation](agent-implementation.md) for the implemented scope, conservative verification gates, remaining ranged-read work and live evaluation limitations.

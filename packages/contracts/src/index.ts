@@ -58,6 +58,7 @@ export const FundSummarySchema = FundIdentitySchema.extend({
   status_reason: z.string(),
 });
 export const FundListSchema = z.object({
+  processing_mode: z.enum(["deterministic", "agent"]).optional(),
   schema_version: z.literal(1),
   period: z.object({ start: z.iso.date(), end: z.iso.date() }),
   funds: z.array(FundSummarySchema),
@@ -73,6 +74,13 @@ export const FactFieldSchema = z.enum([
   "reported_nav",
 ]);
 export const LocatorSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("csv_record"),
+    version: z.literal(1),
+    record_index: z.number().int().positive(),
+    column_index: z.number().int().positive(),
+    column_name: z.string(),
+  }),
   z.object({
     kind: z.literal("csv"),
     record_number: z.number().int().positive(),
@@ -142,7 +150,25 @@ export const ErrorEnvelopeSchema = z.object({
   schema_version: z.literal(1),
   error: SafeErrorSchema.extend({ request_id: z.string() }),
 });
+export const ProcessingSchema = z.object({
+  mode: z.enum(["deterministic", "agent"]),
+  model: z.string().nullable(),
+  toolset: z.string().nullable(),
+  verification: z.enum([
+    "not_applicable",
+    "pending",
+    "source_checked",
+    "visual_passed",
+    "needs_input",
+  ]),
+  commentary: z.enum(["template", "agent_supported"]),
+  model_requests: z.number().int().nonnegative(),
+  tool_calls: z.number().int().nonnegative(),
+  input_tokens: z.number().int().nonnegative(),
+  output_tokens: z.number().int().nonnegative(),
+});
 const RunBase = z.object({
+  processing: ProcessingSchema.optional(),
   schema_version: z.literal(1),
   run_id: z.uuid(),
   reconciliation_period_id: z.uuid(),

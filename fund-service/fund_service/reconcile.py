@@ -76,6 +76,9 @@ def extract(snapshot: dict, root: Path) -> tuple[list, list]:
     scope = snapshot["inputs"]
     for document in snapshot["documents"]:
         data = sources.read(root, document)
+        if document["media_type"] != "text/csv":
+            issues.append("UNSUPPORTED_LAYOUT")
+            continue
         if len(data) > 2_000_000:
             issues.append("UNSUPPORTED_DOCUMENT_SIZE")
             continue

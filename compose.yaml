@@ -64,6 +64,14 @@ services:
       DATABASE_URL: postgresql://nav:${POSTGRES_PASSWORD}@postgres:5432/nav_demo
       FUND_SERVICE_TOKEN: ${FUND_SERVICE_TOKEN:?Run node scripts/setup-local.mjs first}
       SOURCE_DIR: /data/sources
+      AGENT_MODE: ${AGENT_MODE:-off}
+      AGENT_MODEL: ${AGENT_MODEL:-openai:gpt-4.1-mini}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AGENT_MAX_REQUESTS: ${AGENT_MAX_REQUESTS:-12}
+      AGENT_MAX_TOOL_CALLS: ${AGENT_MAX_TOOL_CALLS:-24}
+      AGENT_TIMEOUT_SECONDS: ${AGENT_TIMEOUT_SECONDS:-90}
+      AGENT_REQUEST_TIMEOUT_SECONDS: ${AGENT_REQUEST_TIMEOUT_SECONDS:-20}
+      SEED_AGENT_DEMO: ${SEED_AGENT_DEMO:-false}
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
@@ -82,7 +90,7 @@ services:
       interval: 3s
       timeout: 5s
       retries: 20
-    stop_grace_period: 30s
+    stop_grace_period: 190s
 volumes:
   postgres-data:
   source-files:

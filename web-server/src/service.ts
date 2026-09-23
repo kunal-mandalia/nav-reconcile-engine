@@ -19,7 +19,7 @@ export interface Principal {
 export const DEMO_PRINCIPALS: Record<string, Principal> = {
   "demo-operations": {
     id: "alex-chen",
-    allowedFundIds: [1, 2, 3, 4, 5, 6].map(uuid),
+    allowedFundIds: [1, 2, 3, 4, 5, 6, 7].map(uuid),
     canRun: true,
   },
   "demo-reviewer": {

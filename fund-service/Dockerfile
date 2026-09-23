@@ -7,5 +7,6 @@ COPY packages/contracts/wire.schema.json /app/packages/contracts/wire.schema.jso
 COPY fund-service/fund_service ./fund_service
 COPY fund-service/migrations ./migrations
 COPY fund-service/fixtures ./fixtures
+COPY fund-service/agent_fixtures ./agent_fixtures
 ENV PATH="/app/fund-service/.venv/bin:$PATH" PYTHONUNBUFFERED=1
 CMD ["uvicorn", "fund_service.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

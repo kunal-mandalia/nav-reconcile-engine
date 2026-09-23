@@ -23,7 +23,9 @@
     "dev:service": "npm run services:up && concurrently --kill-others -n api,web \"npm run dev:service -w web-server\" \"npm run dev:service -w web-app\"",
     "test:fund": "node --env-file=.env scripts/test-fund.mjs",
     "docker:up": "node scripts/setup-local.mjs && node --env-file=.env scripts/docker-up.mjs",
-    "docker:stop": "docker compose stop"
+    "docker:stop": "docker compose stop",
+    "eval:agent": "node --env-file=.env scripts/eval-agent.mjs",
+    "test:agent:e2e": "node --env-file=.env scripts/test-agent-e2e.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

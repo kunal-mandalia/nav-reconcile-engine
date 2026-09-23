@@ -48,7 +48,7 @@ fund,period_start,period_end,currency,scale,field,value
 - One selected value per field. Missing, duplicate/conflicting, invalid-scope or unsupported-layout values block a numerical conclusion. Missing is never zero.
 - Amounts permit standard decimal text, correctly grouped commas and accounting brackets. Calls/distributions become non-negative magnitudes, while income/loss stays signed. A bracketed distribution is converted once to a positive magnitude and subtracted once by the rule. Unmapped negative movement conventions require input.
 - Original strings, scale and one-based CSV data-record/column locators are kept with each selected fact. Record numbers exclude the header and account for quoted multiline fields.
-- Files over 2 MB or more than 10,000 records need another supported layout/limit policy. PDF and Excel extraction are deferred.
+- Files over 2 MB or more than 10,000 records need another supported layout/limit policy. PDFs require the optional agent mode below; Excel extraction is deferred.
 
 The rule is `opening + calls - distributions + signed income`. A match requires input alignment and an unrounded absolute difference no greater than `0.010000` in the fund currency. Python Decimal uses a 50-digit arithmetic context; values are checked for finite range and six-place precision before `NUMERIC(38,6)` insertion. API money is always a decimal string.
 
@@ -83,4 +83,12 @@ NAV_E2E_MODE=service PLAYWRIGHT_CHROME_CHANNEL=chrome npm run test:e2e
 
 `test:fund` uses local `uv` and the database address from `.env`. Each integration test creates its own randomly named database and source directory, then removes only those test resources. It never truncates the demo database. Tests cover source extraction, precision, tolerance boundaries, permissions, concurrent idempotency, capacity, transactional rollback, provenance, file tampering and service restart behaviour.
 
-Production identity, multiple workers, durable automatic recovery, upload workflows, flexible layouts, candidate review, PDF/Excel and AI assistance remain later work.
+Production identity, multiple workers, durable automatic recovery, upload workflows, general layout support, candidate review, image-only scans, Excel and ranged reads remain later work. Optional whole-file agent assistance for known CSV/PDF layouts is implemented below.
+
+## Optional agent mode
+
+The existing worker can use Pydantic AI and OpenAI with `AGENT_MODE=assist`; default `off` runs only deterministic extraction. Configure `OPENAI_API_KEY` in the root `.env` and `SEED_AGENT_DEMO=true` to register Harbor Infrastructure III. Rebuild/recreate with `npm run docker:up`. The key is passed only to this service. New runs freeze their non-secret policy; startup never creates paid model runs.
+
+Tools are limited to listing and reading complete authorised CSV/PDF files. Full-page PDF images support a blinded visual verification call. Python validates citations, performs exact Decimal calculations and renders constrained commentary. Ranged reads are a non-registered placeholder. The implementation supports the known demo layouts and returns Needs input for unsupported mappings.
+
+See [agent implementation](../docs/plans/agent-implementation.md) for configuration, limits, audit storage, offline tests and the explicit paid evaluation command.

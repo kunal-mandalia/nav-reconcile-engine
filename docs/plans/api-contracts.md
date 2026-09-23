@@ -236,3 +236,9 @@ A completed poll returns `200` even when the financial outcome is `mismatch` or 
 | Edit rules or input selection | Explicit selection/rule commands; add expected revision to run creation | Snapshot rules/tolerance in every run |
 
 Shared runtime schemas and inferred types now live in `packages/contracts`; public and internal security differ but domain shapes can be reused. First acceptance path: authorised fund list → rerun → poll → decision → original cited document. Test forbidden access, duplicate POSTs, exact decimal round-tripping and technical-vs-financial failure states before adding more endpoints.
+
+## Optional agent metadata
+
+The same four endpoints support the optional Python agent workflow. `FundList.processing_mode` (`deterministic` or `agent`) describes new runs. Optional `Run.processing` records the run's actual mode, model/toolset, verification and commentary status, and model/tool/token counters. The mock omits these fields. Policy is frozen at admission; changing configuration does not relabel history.
+
+`csv_record` locators add `version: 1`, a one-based `record_index` across the entire file, `column_index` and `column_name`. Existing `csv.record_number` still counts data records excluding the fixed header. See [agent implementation](agent-implementation.md) for validation and failure semantics.

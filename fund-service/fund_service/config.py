@@ -2,6 +2,8 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .agent.policy import AgentSettings
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -12,6 +14,8 @@ class Settings:
     source_dir: Path
     queue_capacity: int = 8
     seed_demo: bool = True
+    seed_agent_demo: bool = False
+    agent: AgentSettings = field(default_factory=AgentSettings)
 
     @classmethod
     def from_env(cls):
@@ -27,4 +31,6 @@ class Settings:
             source_dir=Path(os.environ.get("SOURCE_DIR", ROOT / "data")),
             queue_capacity=capacity,
             seed_demo=os.environ.get("SEED_DEMO", "true") == "true",
+            seed_agent_demo=os.environ.get("SEED_AGENT_DEMO", "false") == "true",
+            agent=AgentSettings.from_env(),
         )

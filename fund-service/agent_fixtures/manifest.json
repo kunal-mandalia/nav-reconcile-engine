@@ -1,0 +1,35 @@
+{
+  "period": {
+    "start": "2026-04-01",
+    "end": "2026-06-30"
+  },
+  "funds": [
+    {
+      "fund": {
+        "fund_id": "00000000-0000-4000-8000-000000000007",
+        "name": "Harbor Infrastructure III",
+        "administrator": "Northstar Demo Administration",
+        "strategy": "Infrastructure"
+      },
+      "currency": "USD",
+      "reconciliation_period_id": "00000000-0000-4000-8000-000000000107",
+      "pack_id": "00000000-0000-4000-8000-000000000207",
+      "pack_version": 1,
+      "initial_run": false,
+      "documents": [
+        {
+          "document_id": "00000000-0000-4000-8000-000000000701",
+          "filename": "capital_account_messy.csv",
+          "media_type": "text/csv",
+          "role": "pack"
+        },
+        {
+          "document_id": "00000000-0000-4000-8000-000000000702",
+          "filename": "quarterly_report.pdf",
+          "media_type": "application/pdf",
+          "role": "pack"
+        }
+      ]
+    }
+  ]
+}

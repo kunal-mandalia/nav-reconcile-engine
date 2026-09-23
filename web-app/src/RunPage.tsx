@@ -94,9 +94,10 @@ function Evidence({
           ))}
         </div>
         <p className="demo-note">
-          This excerpt and the downloadable CSV come from the same fictional
-          source fixture. CSV record numbers exclude the header. The run keeps
-          its own immutable evidence.
+          This value refers to the downloadable original source. Legacy CSV
+          record numbers exclude the header; file record numbers include
+          headers, blank records and preambles. PDF references use original page
+          coordinates. The run keeps its own immutable evidence.
         </p>
       </div>
       <div className="dialog-foot">
@@ -530,6 +531,40 @@ export function RunPage({ identity }: { identity: Identity }) {
                 <dl className="meta">
                   {[
                     ["Run", run.run_id.slice(0, 8)],
+                    [
+                      "Processing",
+                      run.processing?.mode === "agent"
+                        ? "Agent-assisted"
+                        : run.processing
+                          ? "Deterministic"
+                          : "Mock / not recorded",
+                    ],
+                    ...(run.processing?.mode === "agent"
+                      ? [
+                          ["Model", run.processing.model ?? "—"],
+                          ["Read tools", "Whole files"],
+                          [
+                            "Verification",
+                            {
+                              pending: "Pending",
+                              visual_passed: "Visual + source checks passed",
+                              source_checked: "Source checks passed (CSV)",
+                              needs_input: "Unresolved evidence",
+                              not_applicable: "Not applicable",
+                            }[run.processing.verification],
+                          ],
+                          [
+                            "Model / tool calls",
+                            `${run.processing.model_requests} / ${run.processing.tool_calls}`,
+                          ],
+                          [
+                            "Commentary",
+                            run.processing.commentary === "agent_supported"
+                              ? "Agent plan · validated wording"
+                              : "Deterministic template",
+                          ],
+                        ]
+                      : []),
                     ["Reporting date", date(run.inputs.period_end)],
                     ["Entity scope", "Whole fund"],
                     ["Currency", run.inputs.currency],

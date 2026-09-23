@@ -96,6 +96,7 @@ def seed(repository, source_dir, fixture_dir=ROOT / "fixtures"):
                 item["reconciliation_period_id"],
                 f"seed-{item['pack_id']}",
                 "demo-seed",
+                seed_run=True,
             )
             row = repository.claim()
             if row:

@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from psycopg.types.json import Jsonb
 
+from .agent.policy import AgentPolicy
 from .contracts import validate
 from .db import ADMISSION_LOCK
 from .errors import ServiceError
@@ -37,6 +38,20 @@ def payload(row: dict) -> dict:
         "stage_updated_at": timestamp(row["stage_updated_at"]),
         "poll_url": f"/api/v1/runs/{row['id']}",
     }
+    policy = snapshot.get("agent_policy", {"mode": "off"})
+    trace = row.get("agent_trace") or {}
+    result["processing"] = {
+        "mode": "agent" if policy["mode"] == "assist" else "deterministic",
+        "model": policy.get("model") if policy["mode"] == "assist" else None,
+        "toolset": policy.get("toolset") if policy["mode"] == "assist" else None,
+        "verification": "not_applicable" if policy["mode"] == "off" else "pending",
+        "commentary": "template",
+        "model_requests": 0,
+        "tool_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        **trace.get("summary", {}),
+    }
     if row["completed_at"]:
         result["completed_at"] = timestamp(row["completed_at"])
     if row["state"] == "failed":
@@ -47,8 +62,9 @@ def payload(row: dict) -> dict:
 
 
 class Repository:
-    def __init__(self, pool, capacity=8):
+    def __init__(self, pool, capacity=8, agent_policy=None):
         self.pool, self.capacity = pool, capacity
+        self.agent_policy = agent_policy or AgentPolicy()
 
     @staticmethod
     def _run(conn, run_id):
@@ -149,10 +165,17 @@ class Repository:
             )
         return validate(
             "FundList",
-            {"schema_version": 1, "period": {"start": str(start), "end": str(end)}, "funds": funds},
+            {
+                "schema_version": 1,
+                "period": {"start": str(start), "end": str(end)},
+                "funds": funds,
+                "processing_mode": "agent"
+                if self.agent_policy.mode == "assist"
+                else "deterministic",
+            },
         )
 
-    def start(self, actor, fund_id, period_id, key, request_id):
+    def start(self, actor, fund_id, period_id, key, request_id, *, seed_run=False):
         authorise(actor, fund_id, write=True)
         fingerprint = hashlib.sha256(f"start:{fund_id}:{period_id}".encode()).hexdigest()
         with self.pool.connection() as conn:
@@ -232,7 +255,10 @@ class Repository:
                     "absolute_tolerance": money(period["tolerance"]),
                 },
                 "manifest_sha256": pack["manifest_sha256"],
-                "extractor_version": "fixed-csv-v1",
+                "extractor_version": "fixed-csv-v1"
+                if seed_run or self.agent_policy.mode == "off"
+                else "agent-whole-file-v1",
+                "agent_policy": (AgentPolicy() if seed_run else self.agent_policy).snapshot(),
                 "service_version": "0.1.0",
                 "required_checks": ["input_alignment", "capital_roll_forward"],
                 "documents": [
@@ -276,7 +302,7 @@ class Repository:
                 (stage, run_id),
             )
 
-    def publish(self, run_id, result):
+    def publish(self, run_id, result, *, agent_trace=None):
         with self.pool.connection() as conn:
             row = conn.execute(
                 "SELECT * FROM reconciliation_run WHERE id=%s FOR UPDATE", (run_id,)
@@ -292,6 +318,7 @@ class Repository:
                     "stage": "finished",
                     "outcome": result["outcome"],
                     "result": result,
+                    "agent_trace": agent_trace,
                     "completed_at": now,
                     "stage_updated_at": now,
                 }
@@ -338,10 +365,11 @@ class Repository:
             summary = result["summary"]
             conn.execute(
                 """UPDATE reconciliation_run SET state='completed',stage='finished',outcome=%s,
-                result=%s,reported_nav=%s,calculated_nav=%s,difference=%s,completed_at=%s,stage_updated_at=%s WHERE id=%s""",
+                result=%s,agent_trace=%s,reported_nav=%s,calculated_nav=%s,difference=%s,completed_at=%s,stage_updated_at=%s WHERE id=%s""",
                 (
                     result["outcome"],
                     Jsonb(result),
+                    Jsonb(agent_trace) if agent_trace else None,
                     summary["reported_nav"],
                     summary["calculated_nav"],
                     summary["difference"],
@@ -351,12 +379,16 @@ class Repository:
                 ),
             )
 
-    def fail(self, run_id, code, message):
+    def fail(self, run_id, code, message, *, agent_trace=None):
         with self.pool.connection() as conn:
             conn.execute(
-                """UPDATE reconciliation_run SET state='failed',error=%s,completed_at=clock_timestamp(),stage_updated_at=clock_timestamp()
+                """UPDATE reconciliation_run SET state='failed',error=%s,agent_trace=%s,completed_at=clock_timestamp(),stage_updated_at=clock_timestamp()
                 WHERE id=%s AND state IN ('queued','running')""",
-                (Jsonb({"code": code, "message": message}), run_id),
+                (
+                    Jsonb({"code": code, "message": message}),
+                    Jsonb(agent_trace) if agent_trace else None,
+                    run_id,
+                ),
             )
 
     def interrupt_unfinished(self):

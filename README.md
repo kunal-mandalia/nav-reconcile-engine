@@ -31,6 +31,12 @@ Shell settings override `.env`. The wrapper starts FastAPI/Postgres and waits fo
 
 Nginx proxies `/api` to Express using the Compose service name; Express calls `http://fund-service:8000`. The browser sees one origin. Nginx re-resolves the API address after container replacement. See [Docker Compose networking](https://docs.docker.com/compose/how-tos/networking/). No service credential is bundled into the frontend. The Express container keeps `NODE_ENV=development` because this is still the demo-identity API, even though it runs compiled JavaScript.
 
+## Optional agent workflow
+
+Set `AGENT_MODE=assist`, `OPENAI_API_KEY`, and `SEED_AGENT_DEMO=true` in the root `.env`, with `CLIENT_API_BACKEND=fund-service`, then run `npm run docker:up`. Start **Harbor Infrastructure III** to process its fictional CSV/PDF pack with whole-file read tools and independent visual verification. The fund list shows the mode for new runs; run context shows actual model usage and verification.
+
+`AGENT_MODE=off` keeps deterministic-only processing (the default). The original six CSV packs continue to work; the Harbor layout returns Needs input in deterministic mode. Existing runs retain their original mode. Ranged reads are an explicit future extension. See [implementation, limits and tests](docs/plans/agent-implementation.md).
+
 ## Develop locally with hot reload
 
 Stop Docker web containers first (`npm run docker:stop`) to free ports 3005 and 4000.
@@ -93,7 +99,7 @@ Runs freeze the pack manifest, hashes, rules and source metadata at admission. A
 
 Money travels as six-place decimal strings. Python uses `Decimal` with 50-digit calculation precision and validates values before Postgres `NUMERIC(38,6)` insertion. The mock uses `decimal.js`; the UI formats decimals without converting through JavaScript `Number`.
 
-This remains a local demo: production login, uploads, PDF/Excel extraction, editable mappings, human review commands, AI and automatic interrupted-job recovery are deferred. The supported input layout and operational details are in [fund-service/README.md](fund-service/README.md).
+This remains a local demo: production login, uploads, general PDF/Excel layout support, editable mappings, human review commands, ranged reads and automatic interrupted-job recovery are deferred. Optional agent assistance supports the known CSV/PDF demo layouts. The supported input layout and operational details are in [fund-service/README.md](fund-service/README.md).
 
 ## API and demo controls
 
@@ -108,7 +114,7 @@ The [API contract](docs/plans/api-contracts.md) describes exactly four operation
 
 Every operation requires `Authorization: Bearer demo-operations` or `Authorization: Bearer demo-reviewer`. These are deliberately public demo tokens, **not production authentication**. The executable accepts `CLIENT_API_BACKEND=mock|fund-service` or explicit `--mock` / `--service` flags and refuses `NODE_ENV=production`. Explicit flags take precedence over the environment; the existing development scripts retain their named modes. Invalid or missing configuration fails startup instead of silently selecting mock data.
 
-Alex has read/run access to all six funds; Priya can read Meridian and Cove. Rate budgets default to 180 reads and 6 run requests per minute per identity. Throttled requests return `429` with `Retry-After`. Errors include a request ID. Polling and run creation have separate budgets. The browser keeps an idempotency key in session storage until a definitive response, so retrying a lost POST response reuses the original run.
+Alex has read/run access to the six original funds and optional Harbor sample; Priya can read Meridian and Cove. Rate budgets default to 180 reads and 6 run requests per minute per identity. Throttled requests return `429` with `Retry-After`. Errors include a request ID. Polling and run creation have separate budgets. The browser keeps an idempotency key in session storage until a definitive response, so retrying a lost POST response reuses the original run.
 
 ```sh
 curl -H 'Authorization: Bearer demo-operations' \

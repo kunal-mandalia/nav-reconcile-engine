@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse, Response
 from psycopg_pool import PoolTimeout
 from pydantic import BaseModel, ConfigDict
 
-from .config import Settings
+from .config import ROOT, Settings
 from .db import SERVICE_LOCK, migrate, open_pool
 from .errors import ServiceError, SourceFailure
 from .repository import Repository
@@ -52,13 +52,17 @@ def create_app(settings: Settings | None = None, *, run_worker=True):
                 raise RuntimeError(
                     "Another fund-service instance owns this database; use one worker process."
                 )
-            repository = Repository(pool, settings.queue_capacity)
+            repository = Repository(pool, settings.queue_capacity, settings.agent.policy)
             repository.interrupt_unfinished()
             if settings.seed_demo:
                 seed(repository, settings.source_dir)
+            if settings.seed_agent_demo:
+                seed(repository, settings.source_dir, ROOT / "agent_fixtures")
             app.state.repository = repository
             if run_worker:
-                worker = Worker(repository, settings.source_dir, ownership)
+                worker = Worker(
+                    repository, settings.source_dir, ownership, agent_settings=settings.agent
+                )
                 worker.start()
             app.state.worker = worker
             yield

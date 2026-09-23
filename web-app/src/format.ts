@@ -25,6 +25,8 @@ export const time = (value: string) =>
   }).format(new Date(value));
 export function location(fact: Fact): string {
   const locator = fact.locator;
+  if (locator.kind === "csv_record")
+    return `File record ${locator.record_index} · ${locator.column_name}`;
   if (locator.kind === "csv")
     return `Record ${locator.record_number} · ${locator.column_name}`;
   if (locator.kind === "spreadsheet")

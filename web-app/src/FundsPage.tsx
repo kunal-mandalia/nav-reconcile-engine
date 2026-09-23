@@ -75,6 +75,18 @@ export function FundsPage({ identity }: { identity: Identity }) {
           <div className="eyebrow">Portfolio oversight</div>
           <h1>Fund reconciliations</h1>
           <p>A clear view of every fund. Evidence behind every result.</p>
+          {query.data?.processing_mode && (
+            <p
+              className="scope-note"
+              role="status"
+              aria-label="Processing mode"
+            >
+              New runs:{" "}
+              {query.data.processing_mode === "agent"
+                ? "Agent-assisted · whole-file reads"
+                : "Deterministic processing"}
+            </p>
+          )}
         </div>
         <div className="period-label">
           <span className="live-dot" />
