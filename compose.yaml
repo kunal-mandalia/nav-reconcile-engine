@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: web-app/Dockerfile
     ports:
-      - "127.0.0.1:3005:80"
+      - "127.0.0.1:3700:80"
     depends_on:
       web-server:
         condition: service_healthy
@@ -21,14 +21,14 @@ services:
     init: true
     environment:
       CLIENT_API_BACKEND: ${CLIENT_API_BACKEND:-fund-service}
-      FUND_SERVICE_URL: http://fund-service:8000
+      FUND_SERVICE_URL: http://fund-service:4701
       FUND_SERVICE_TOKEN: ${FUND_SERVICE_TOKEN:?Run node scripts/setup-local.mjs first}
       FUND_SERVICE_TIMEOUT_MS: ${FUND_SERVICE_TIMEOUT_MS:-10000}
       READ_RATE_LIMIT: ${READ_RATE_LIMIT:-180}
       RUN_RATE_LIMIT: ${RUN_RATE_LIMIT:-6}
       MOCK_STAGE_MS: ${MOCK_STAGE_MS:-1000}
     ports:
-      - "127.0.0.1:4000:4000"
+      - "127.0.0.1:4700:4700"
     healthcheck:
       # TCP liveness avoids consuming the demo identity's API rate budget.
       test:
@@ -36,7 +36,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "const net=require('node:net'); const s=net.connect(4000,'127.0.0.1',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));s.setTimeout(2000,()=>process.exit(1));",
+          "const net=require('node:net'); const s=net.connect(4700,'127.0.0.1',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));s.setTimeout(2000,()=>process.exit(1));",
         ]
       interval: 3s
       timeout: 3s
@@ -73,7 +73,7 @@ services:
       AGENT_REQUEST_TIMEOUT_SECONDS: ${AGENT_REQUEST_TIMEOUT_SECONDS:-20}
       SEED_AGENT_DEMO: ${SEED_AGENT_DEMO:-false}
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:4701:4701"
     volumes:
       - source-files:/data/sources
     depends_on:
@@ -85,7 +85,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4701/healthz', timeout=3)",
         ]
       interval: 3s
       timeout: 5s

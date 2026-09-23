@@ -20,9 +20,9 @@ const env = {
   TEST_DATABASE_URL: database.href,
   SOURCE_DIR: join(temp, "sources"),
   FUND_SERVICE_TOKEN: "offline-agent-e2e-service-credential-only",
-  FUND_SERVICE_URL: "http://127.0.0.1:8105",
+  FUND_SERVICE_URL: "http://127.0.0.1:4703",
   CLIENT_API_BACKEND: "fund-service",
-  PORT: "4105",
+  PORT: "4702",
   READ_RATE_LIMIT: "1000",
   RUN_RATE_LIMIT: "100",
   PYTHONPATH: `${resolve("fund-service")}:${resolve("fund-service/tests")}`,
@@ -94,24 +94,24 @@ try {
     "--host",
     "127.0.0.1",
     "--port",
-    "8105",
+    "4703",
   ]);
-  await ready("http://127.0.0.1:8105/healthz");
+  await ready("http://127.0.0.1:4703/healthz");
   launch(process.execPath, [
     "--import",
     "tsx",
     "web-server/src/index.ts",
     "--service",
   ]);
-  await ready("http://127.0.0.1:4105/api/v1/funds");
+  await ready("http://127.0.0.1:4702/api/v1/funds");
   vite = await createServer({
     root: "web-app",
     configFile: "web-app/vite.config.ts",
     server: {
       host: "127.0.0.1",
-      port: 3105,
+      port: 3701,
       strictPort: true,
-      proxy: { "/api": "http://127.0.0.1:4105" },
+      proxy: { "/api": "http://127.0.0.1:4702" },
     },
   });
   await vite.listen();
@@ -123,7 +123,7 @@ try {
   });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("http://127.0.0.1:3105");
+  await page.goto("http://127.0.0.1:3701");
   await expect(
     page.getByRole("status", { name: "Processing mode" }),
   ).toContainText("Agent-assisted");

@@ -8,7 +8,7 @@ A React/TypeScript app and Express API connected to a Python/FastAPI reconciliat
 npm run docker:up
 ```
 
-Open **http://127.0.0.1:3005**. This builds the frontend (served by Nginx), the Express client API and FastAPI, and starts Postgres. It creates an ignored `.env` with local credentials if absent. Requires Node.js 22.12+ and Docker Compose; host npm dependencies and Python are not needed for this path.
+Open **http://127.0.0.1:3700**. This builds the frontend (served by Nginx), the Express client API and FastAPI, and starts Postgres. It creates an ignored `.env` with local credentials if absent. Requires Node.js 22.12+ and Docker Compose; host npm dependencies and Python are not needed for this path.
 
 Set the client API adapter in the root `.env`:
 
@@ -29,7 +29,7 @@ Shell settings override `.env`. The wrapper starts FastAPI/Postgres and waits fo
 
 `npm run docker:stop` stops all four containers without deleting data. Use the wrapper for mode-aware startup; plain `docker compose up` starts all four services regardless of the adapter setting. `docker compose restart` does not apply edited environment variables: use `npm run docker:up` to recreate containers as needed.
 
-Nginx proxies `/api` to Express using the Compose service name; Express calls `http://fund-service:8000`. The browser sees one origin. Nginx re-resolves the API address after container replacement. See [Docker Compose networking](https://docs.docker.com/compose/how-tos/networking/). No service credential is bundled into the frontend. The Express container keeps `NODE_ENV=development` because this is still the demo-identity API, even though it runs compiled JavaScript.
+Nginx proxies `/api` to Express using the Compose service name; Express calls `http://fund-service:4701`. The browser sees one origin. Nginx re-resolves the API address after container replacement. See [Docker Compose networking](https://docs.docker.com/compose/how-tos/networking/). No service credential is bundled into the frontend. The Express container keeps `NODE_ENV=development` because this is still the demo-identity API, even though it runs compiled JavaScript.
 
 ## Optional agent workflow
 
@@ -39,7 +39,7 @@ Set `AGENT_MODE=assist`, `OPENAI_API_KEY`, and `SEED_AGENT_DEMO=true` in the roo
 
 ## Develop locally with hot reload
 
-Stop Docker web containers first (`npm run docker:stop`) to free ports 3005 and 4000.
+Stop Docker web containers first (`npm run docker:stop`) to free ports 3700 and 4700.
 
 Requires Node.js 22.12+ (tested with Node 24), npm and a running Docker engine. Python dependencies are installed in the service container; local `uv` is only needed for Python development/tests.
 
@@ -48,13 +48,13 @@ npm ci
 npm run dev:service
 ```
 
-Open **http://127.0.0.1:3005**. The startup command creates a git-ignored `.env` with generated local credentials, builds FastAPI, starts Postgres, applies migrations and registers the sample packs once. Existing credentials and data are preserved.
+Open **http://127.0.0.1:3700**. The startup command creates a git-ignored `.env` with generated local credentials, builds FastAPI, starts Postgres, applies migrations and registers the sample packs once. Existing credentials and data are preserved.
 
 | Process | Address | Storage |
 | --- | --- | --- |
-| React/Vite | `127.0.0.1:3005` | Browser cache and demo identity |
-| Express | `127.0.0.1:4000` | In-memory demo rate limits |
-| FastAPI + one worker | `127.0.0.1:8000` | Private service API; original files in a Docker volume |
+| React/Vite | `127.0.0.1:3700` | Browser cache and demo identity |
+| Express | `127.0.0.1:4700` | In-memory demo rate limits |
+| FastAPI + one worker | `127.0.0.1:4701` | Private service API; original files in a Docker volume |
 | Postgres 17 | `127.0.0.1:5433` | Named Docker volume for funds, packs, runs, facts, checks and idempotency |
 
 The web app calls only Express. FastAPI requires a service credential and trusted fund/action scope from Express. All published development ports bind to loopback.
@@ -118,19 +118,19 @@ Alex has read/run access to the six original funds and optional Harbor sample; P
 
 ```sh
 curl -H 'Authorization: Bearer demo-operations' \
-  http://127.0.0.1:4000/api/v1/funds
+  http://127.0.0.1:4700/api/v1/funds
 
 curl -X POST -H 'Authorization: Bearer demo-operations' \
   -H 'Content-Type: application/json' -H 'Idempotency-Key: walkthrough-001' \
   -d '{"reconciliation_period_id":"00000000-0000-4000-8000-000000000101"}' \
-  http://127.0.0.1:4000/api/v1/funds/00000000-0000-4000-8000-000000000001/runs
+  http://127.0.0.1:4700/api/v1/funds/00000000-0000-4000-8000-000000000001/runs
 ```
 
 The POST returns `202` while active, or `200` when replaying a terminal run. Follow its `Location`/`poll_url`. Service-mode work runs independently of status reads and usually completes quickly for these small packs. Mock mode simulates five one-second stages. An intentional rerun uses a new key. A new key while a run is active returns `409` and its run ID.
 
 Service configuration in `.env`: `FUND_SERVICE_URL`, `FUND_SERVICE_TOKEN` and `DATABASE_URL` (for local Python tools). Compose supplies its own internal database address. Express uses a 10-second downstream timeout (`FUND_SERVICE_TIMEOUT_MS`). The service allows eight outstanding runs by default (`FUND_QUEUE_CAPACITY`); run one service process.
 
-Optional shell environment variables for the API: `HOST` (127.0.0.1 locally, 0.0.0.0 inside Docker), `PORT` (4000), `MOCK_STAGE_MS` (1000), `READ_RATE_LIMIT` (180), `RUN_RATE_LIMIT` (6). If changing `PORT`, also change the Vite proxy target. For example, `RUN_RATE_LIMIT=1 npm run dev` makes throttling easy to demonstrate.
+Optional shell environment variables for the API: `HOST` (127.0.0.1 locally, 0.0.0.0 inside Docker), `PORT` (4700), `MOCK_STAGE_MS` (1000), `READ_RATE_LIMIT` (180), `RUN_RATE_LIMIT` (6). If changing `PORT`, also change the Vite proxy target. For example, `RUN_RATE_LIMIT=1 npm run dev` makes throttling easy to demonstrate.
 
 ## Verification
 

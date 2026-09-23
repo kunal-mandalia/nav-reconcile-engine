@@ -14,7 +14,7 @@ OPENAI_API_KEY=your-api-key
 SEED_AGENT_DEMO=true
 ```
 
-Run `npm run docker:up` and open http://127.0.0.1:3005. Select **Harbor Infrastructure III → Start reconciliation**. Its whole-fund Q2 2026 pack has a messy CSV and four-page searchable PDF. The expected calculated NAV is USD 87,775,000, reported NAV USD 87,700,000 and difference USD 75,000. No source explains the variance.
+Run `npm run docker:up` and open http://127.0.0.1:3700. Select **Harbor Infrastructure III → Start reconciliation**. Its whole-fund Q2 2026 pack has a messy CSV and four-page searchable PDF. The expected calculated NAV is USD 87,775,000, reported NAV USD 87,700,000 and difference USD 75,000. No source explains the variance.
 
 The fund list labels how **new** runs will execute. Each run's context records its actual mode, model, verification result and call counts. Existing results keep their original mode. Original source downloads still use the existing authorised endpoint.
 
@@ -74,7 +74,7 @@ PLAYWRIGHT_CHROME_CHANNEL=chrome npm run test:agent:e2e
 npm run eval:agent -- --live --report /tmp/nav-agent-report.json
 ```
 
-Python tests disable real model requests globally and use Pydantic AI `FunctionModel` responses with real readers and a separate Postgres database. They cover baseline/matched/conflicting packs, visual disagreement, invalid citations, budgets, provider failures, commentary fallback, immutable mode snapshots, evidence downloads and idempotency. The browser harness creates a disposable database and starts the real worker, Express and React on ports 8105/4105/3105, with scripted providers. It cleans up its own services and database and leaves the running demo alone.
+Python tests disable real model requests globally and use Pydantic AI `FunctionModel` responses with real readers and a separate Postgres database. They cover baseline/matched/conflicting packs, visual disagreement, invalid citations, budgets, provider failures, commentary fallback, immutable mode snapshots, evidence downloads and idempotency. The browser harness creates a disposable database and starts the real worker, Express and React on ports 4703/4702/3701, with scripted providers. It cleans up its own services and database and leaves the running demo alone.
 
 The opt-in live evaluation uses only the fictional source allowlist, stores sources temporarily, compares all five accepted values with an oracle outside model context, and writes no demo database data. A successful OpenAI evaluation on 24 September 2026 used six requests and three tool calls, with all five values verified and the expected USD 75,000 mismatch. Earlier development attempts were rejected for omitted PDF citations and output-format mismatches; the schema/coverage corrections are part of this implementation. One successful fixture run does not establish general extraction reliability.
 

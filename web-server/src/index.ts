@@ -14,7 +14,7 @@ function positive(value: string | undefined, fallback: number): number {
     );
   return parsed;
 }
-const port = positive(process.env.PORT, 4000);
+const port = positive(process.env.PORT, 4700);
 const host = process.env.HOST ?? "127.0.0.1";
 const app = createApp({
   service: mock
@@ -22,7 +22,7 @@ const app = createApp({
         stageMs: positive(process.env.MOCK_STAGE_MS, 1000),
       })
     : new RemoteFundService({
-        url: process.env.FUND_SERVICE_URL ?? "http://127.0.0.1:8000",
+        url: process.env.FUND_SERVICE_URL ?? "http://127.0.0.1:4701",
         token: process.env.FUND_SERVICE_TOKEN ?? "",
         timeoutMs: positive(process.env.FUND_SERVICE_TIMEOUT_MS, 10000),
       }),

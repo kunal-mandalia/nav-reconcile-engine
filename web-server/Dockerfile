@@ -18,7 +18,7 @@ COPY web-server/package.json web-server/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 RUN npm ci --omit=dev --workspace=web-server --include-workspace-root=false && npm cache clean --force
 COPY --from=build /app/web-server/dist web-server/dist
-ENV HOST=0.0.0.0 PORT=4000 NODE_ENV=development
+ENV HOST=0.0.0.0 PORT=4700 NODE_ENV=development
 USER node
-EXPOSE 4000
+EXPOSE 4700
 CMD ["node", "web-server/dist/index.js"]

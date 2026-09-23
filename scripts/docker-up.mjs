@@ -19,5 +19,5 @@ if (mode === "fund-service")
 compose("up", "--build", "-d", "--wait", "web-app");
 if (mode === "mock") compose("stop", "fund-service", "postgres");
 console.log(
-  `Demo ready at http://127.0.0.1:3005 (${mode}). Refresh any open browser tab after switching modes.`,
+  `Demo ready at http://127.0.0.1:3700 (${mode}). Refresh any open browser tab after switching modes.`,
 );

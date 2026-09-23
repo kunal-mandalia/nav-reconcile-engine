@@ -11,7 +11,7 @@ const principal = {
   requestId: "upstream-request",
 };
 const options = {
-  url: "http://127.0.0.1:8000",
+  url: "http://127.0.0.1:4701",
   token: "test-service-credential-at-least-32-characters",
 };
 

@@ -11,7 +11,7 @@ npm ci
 npm run dev:service
 ```
 
-This generates local credentials in ignored `.env` if needed, builds the service with its locked Python dependencies, starts Postgres 17 and FastAPI, then starts Express and React. Open http://127.0.0.1:3005. Only loopback ports are published: 3005 (web), 4000 (Express), 8000 (FastAPI), 5433 (Postgres).
+This generates local credentials in ignored `.env` if needed, builds the service with its locked Python dependencies, starts Postgres 17 and FastAPI, then starts Express and React. Open http://127.0.0.1:3700. Only loopback ports are published: 3700 (web), 4700 (Express), 4701 (FastAPI), 5433 (Postgres).
 
 Use Ctrl+C for Node/Vite, then `npm run services:stop` for the containers. Named volumes retain Postgres data and original source bytes. `npm run services:up` starts just the dependencies. `docker compose logs fund-service` shows request/run IDs for tracing.
 
@@ -27,7 +27,7 @@ docker compose stop fund-service
 Run from `fund-service/` (Postgres stays running):
 
 ```sh
-uv run --env-file ../.env uvicorn fund_service.app:create_app --factory --host 127.0.0.1 --port 8000
+uv run --env-file ../.env uvicorn fund_service.app:create_app --factory --host 127.0.0.1 --port 4701
 ```
 
 Local Python uses `fund-service/data/`, while Docker uses a named source volume. Keep the corresponding source bytes with the database when moving between environments. Do not run two service processes against the same database: an advisory lock intentionally rejects the second instance. After a database outage breaks service ownership, restart the fund service; health and new-run admission fail closed until then. This is a single-worker demo, not a distributed job system.

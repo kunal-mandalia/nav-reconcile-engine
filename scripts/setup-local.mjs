@@ -12,7 +12,7 @@ if (!existsSync(path)) {
   const token = randomBytes(32).toString("hex");
   writeFileSync(
     path,
-    `CLIENT_API_BACKEND=fund-service\nPOSTGRES_PASSWORD=${password}\nFUND_SERVICE_TOKEN=${token}\nDATABASE_URL=postgresql://nav:${password}@127.0.0.1:5433/nav_demo\nFUND_SERVICE_URL=http://127.0.0.1:8000\n`,
+    `CLIENT_API_BACKEND=fund-service\nPOSTGRES_PASSWORD=${password}\nFUND_SERVICE_TOKEN=${token}\nDATABASE_URL=postgresql://nav:${password}@127.0.0.1:5433/nav_demo\nFUND_SERVICE_URL=http://127.0.0.1:4701\n`,
     { mode: 0o600, flag: "wx" },
   );
   console.log(
